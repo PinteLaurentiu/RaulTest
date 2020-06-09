@@ -6,7 +6,6 @@
 #include "controller.hpp"
 #include "../conversion/qpixmap_converter.hpp"
 #include <QFileDialog>
-#include <open_cl_base.hpp>
 
 Controller::Controller() : QMainWindow(nullptr), controller(std::make_unique<Ui::Main>()) {
     controller->setupUi(this);

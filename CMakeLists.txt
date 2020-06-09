@@ -20,6 +20,11 @@ file(GLOB_RECURSE BACKEND_SRCS
 add_library(backend ${BACKEND_SRCS})
 target_include_directories(backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(backend ${OpenCL_LIBRARY})
+file(GLOB_RECURSE BACKEND_OPENCL_FILES "src/backend/*.cl")
+foreach(BACKEND_OPENCL_FILE ${BACKEND_OPENCL_FILES})
+    file(RELATIVE_PATH OPENCL_FILE_RELATIVE "${CMAKE_SOURCE_DIR}/src/backend" ${BACKEND_OPENCL_FILE})
+    configure_file(${BACKEND_OPENCL_FILE} "${CMAKE_CURRENT_BINARY_DIR}/${OPENCL_FILE_RELATIVE}" COPYONLY)
+endforeach()
 
 file(GLOB_RECURSE UI_SRCS
         "src/ui/*.hpp"

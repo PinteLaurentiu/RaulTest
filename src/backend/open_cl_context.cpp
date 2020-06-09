@@ -6,11 +6,6 @@
 #include "open_cl_context.hpp"
 #include "types.hpp"
 
-OpenCLContext& OpenCLContext::instance() {
-    static OpenCLContext instance;
-    return instance;
-}
-
 void OpenCLContext::deleteContext(cl_context context) {
     if (context == nullptr)
         return;
@@ -105,6 +100,7 @@ void OpenCLContext::loadDeviceRecursively(const std::vector<std::pair<size, std:
             &deviceTemporary,
             nullptr), "Error while getting the device ");
     std::clog << "Using " << types[typeIndex].second << " device" << std::endl;
+    device = deviceTemporary;
 }
 
 void OpenCLContext::loadFirstDevice(const std::pair<size, std::string>& type, unsigned int count) {
@@ -145,8 +141,8 @@ void OpenCLContext::loadContext() {
     auto contextTemporary = clCreateContext(propertiesPtr,
             expectedDevicesCount,
             &device.value(),
-            nullptr,
-            nullptr,
+            nullptr, // Error Callback
+            nullptr, // Callback Context
             &errorCode);
     terminateOnFailure(errorCode, "Error while creating the context ");
     context = ContextPtr(contextTemporary, &deleteContext);
@@ -157,4 +153,25 @@ void OpenCLContext::loadCommandQueue() {
     auto commandQueueTemporary = clCreateCommandQueueWithProperties(context.get(), device.value(), nullptr, &errorCode);
     terminateOnFailure(errorCode, "Error while creating the command queue ");
     commandQueue = CommandQueuePtr(commandQueueTemporary, &deleteCommandQueue);
+}
+
+OpenCLContext& OpenCLContext::instance() {
+    static OpenCLContext instance;
+    return instance;
+}
+
+std::optional<cl_platform_id> OpenCLContextAccess::platform() {
+    return OpenCLContext::instance().platform;
+}
+
+std::optional<cl_device_id> OpenCLContextAccess::device() {
+    return OpenCLContext::instance().device;
+}
+
+OpenCLContext::ContextPtr& OpenCLContextAccess::context() {
+    return OpenCLContext::instance().context;
+}
+
+OpenCLContext::CommandQueuePtr& OpenCLContextAccess::commandQueue() {
+    return OpenCLContext::instance().commandQueue;
 }

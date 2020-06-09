@@ -8,6 +8,7 @@
 #include "types.hpp"
 #include "rgb_pixel.hpp"
 #include "bw_pixel.hpp"
+#include "open_cl_kernel.hpp"
 #include <memory>
 
 template <typename Pixel>
@@ -24,7 +25,7 @@ public:
     Image& operator=(const Image&) = delete ;
     Image& operator=(Image&&) noexcept;
     ~Image() = default;
-    const PixelPtr& data() const;
+    PixelPtr& data();
     PixelPtr release();
     void setData(size width, size height, PixelPtr data);
     [[nodiscard]] size width() const;
@@ -92,7 +93,7 @@ Image<Pixel>& Image<Pixel>::operator=(Image&& other) noexcept {
 }
 
 template<typename Pixel>
-const typename Image<Pixel>::PixelPtr& Image<Pixel>::data() const {
+typename Image<Pixel>::PixelPtr& Image<Pixel>::data() {
     return dataPtr;
 }
 
@@ -151,6 +152,25 @@ Image<Pixel>::operator Image<DestPixel>() const {
         }
     }
     return dest;
+}
+
+template<>
+template<>
+inline Image<RGBPixel>::operator Image<BWPixel>() const {
+    auto size = w * h;
+    Image<BWPixel> dest(w, h);
+    OpenCLKernel kernel("rgbToBw");
+    OpenCLBuffer bufferInput(dataPtr.get(),
+                             size,
+                             OpenCLBufferMode::READ,
+                             OpenCLBufferMemoryType::DUPLICATE);
+    OpenCLBuffer bufferOutput(static_cast<decltype(dest.data().get())>(nullptr),
+                              size,
+                              OpenCLBufferMode::WRITE);
+    kernel.addArgument(bufferInput);
+    kernel.addArgument(bufferOutput);
+    kernel({{size, 0, size}});
+    bufferOutput.read(dest.data().get());
 }
 
 using RGBImage = Image<RGBPixel>;

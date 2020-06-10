@@ -23,9 +23,9 @@ QPixmap QPixmapConverter::operator()(const RGBImage& lib) {
 }
 
 QImage QPixmapConverter::image(const RGBImage& lib) {
-    QImage img(lib.width(), lib.height(), QImage::Format_ARGB32);
-    for (int i = 0; i < lib.width(); i++) {
-        for (int j = 0; j < lib.height(); j++) {
+    QImage img(lib.getWidth(), lib.getHeight(), QImage::Format_ARGB32);
+    for (int i = 0; i < lib.getWidth(); i++) {
+        for (int j = 0; j < lib.getHeight(); j++) {
             img.setPixel(i, j, pixelConverter(lib.get(i, j)));
         }
     }

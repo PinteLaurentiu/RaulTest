@@ -6,6 +6,7 @@
 #include <open_cl_kernel.hpp>
 #include <main_open_cl_program.hpp>
 
+#include <file_data.hpp>
 
 int main(int argc, char** argv)
 {

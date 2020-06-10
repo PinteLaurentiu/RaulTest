@@ -14,7 +14,6 @@
 template <typename Pixel>
 class Image {
 public:
-    using PixelPtr = std::unique_ptr<Pixel>;
     class PixelRow;
     class ConstPixelRow;
 public:
@@ -25,21 +24,21 @@ public:
     Image& operator=(const Image&) = delete ;
     Image& operator=(Image&&) noexcept;
     ~Image() = default;
-    PixelPtr& data();
-    PixelPtr release();
-    void setData(size width, size height, PixelPtr data);
-    [[nodiscard]] size width() const;
-    [[nodiscard]] size height() const;
+    std::vector<Pixel>& getData();
+    const std::vector<Pixel>& getData() const;
+    void setData(size width, size height, std::vector<Pixel> data);
+    [[nodiscard]] size getWidth() const;
+    [[nodiscard]] size getHeight() const;
     Pixel& get(size x, size y);
     const Pixel& get(size x, size y) const;
     PixelRow operator[](size x);
     ConstPixelRow operator[](size x) const;
     template<typename DestPixel>
-    explicit operator Image<DestPixel>() const;
+    explicit operator Image<DestPixel>();
 private:
-    PixelPtr dataPtr;
-    size w;
-    size h;
+    std::vector<Pixel> data;
+    size width;
+    size height;
 };
 
 template <typename Pixel>
@@ -73,63 +72,56 @@ const Pixel& Image<Pixel>::ConstPixelRow::operator[](size y) const {
 }
 
 template<typename Pixel>
-Image<Pixel>::Image() : w(0), h(0) {}
+Image<Pixel>::Image() : width(0), height(0) {}
 
 template<typename Pixel>
-Image<Pixel>::Image(size width, size height) : w(width), h(height), dataPtr(new Pixel[width * height]) {}
+Image<Pixel>::Image(size width, size height) : width(width), height(height), data(width * height, Pixel()) {}
 
 template<typename Pixel>
-Image<Pixel>::Image(Image&& other) noexcept : w(other.w), h(other.h), dataPtr(std::move(other.dataPtr)) {
-    other.release();
-}
+Image<Pixel>::Image(Image&& other) noexcept : width(other.width), height(other.height), data(std::move(other.data)) {}
 
 template<typename Pixel>
 Image<Pixel>& Image<Pixel>::operator=(Image&& other) noexcept {
-    release();
-    w = other.w;
-    h = other.h;
-    dataPtr = std::move(other.dataPtr);
-    other.release();
+    width = other.width;
+    height = other.height;
+    data = std::move(other.data);
 }
 
 template<typename Pixel>
-typename Image<Pixel>::PixelPtr& Image<Pixel>::data() {
-    return dataPtr;
+std::vector<Pixel>& Image<Pixel>::getData() {
+    return data;
 }
 
 template<typename Pixel>
-typename Image<Pixel>::PixelPtr Image<Pixel>::release() {
-    w = 0;
-    h = 0;
-    return std::move(dataPtr);
+const std::vector<Pixel>& Image<Pixel>::getData() const {
+    return data;
 }
 
 template<typename Pixel>
-void Image<Pixel>::setData(size width, size height, Image::PixelPtr data) {
-    release();
-    w = width;
-    h = height;
-    dataPtr = std::move(data);
+void Image<Pixel>::setData(size newWidth, size newHeight, std::vector<Pixel> newData) {
+    width = newWidth;
+    height = newHeight;
+    data = std::move(newData);
 }
 
 template<typename Pixel>
-size Image<Pixel>::width() const {
-    return w;
+size Image<Pixel>::getWidth() const {
+    return width;
 }
 
 template<typename Pixel>
-size Image<Pixel>::height() const {
-    return h;
+size Image<Pixel>::getHeight() const {
+    return height;
 }
 
 template<typename Pixel>
-Pixel &Image<Pixel>::get(size x, size y) {
-    return dataPtr.get()[y * w + x];
+Pixel& Image<Pixel>::get(size x, size y) {
+    return data[y * width + x];
 }
 
 template<typename Pixel>
 const Pixel &Image<Pixel>::get(size x, size y) const {
-    return dataPtr.get()[y * w + x];
+    return data[y * width + x];
 }
 
 template<typename Pixel>
@@ -144,10 +136,10 @@ typename Image<Pixel>::ConstPixelRow Image<Pixel>::operator[](size x) const {
 
 template<typename Pixel>
 template<typename DestPixel>
-Image<Pixel>::operator Image<DestPixel>() const {
-    Image<DestPixel> dest(w, h);
-    for (int i = 0; i < w; i++) {
-        for (int j = 0; j < h; j++) {
+Image<Pixel>::operator Image<DestPixel>() {
+    Image<DestPixel> dest(width, height);
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
             dest.get(i, j) = static_cast<DestPixel>(get(i, j));
         }
     }
@@ -156,21 +148,22 @@ Image<Pixel>::operator Image<DestPixel>() const {
 
 template<>
 template<>
-inline Image<RGBPixel>::operator Image<BWPixel>() const {
-    auto size = w * h;
-    Image<BWPixel> dest(w, h);
+inline Image<RGBPixel>::operator Image<BWPixel>() {
+    auto size = width * height;
+    Image<BWPixel> dest(width, height);
     OpenCLKernel kernel("rgbToBw");
-    OpenCLBuffer bufferInput(dataPtr.get(),
-                             size,
+    OpenCLBuffer bufferInput(reinterpret_cast<byte*>(data.data()),
+                             size * 3,
                              OpenCLBufferMode::READ,
                              OpenCLBufferMemoryType::DUPLICATE);
-    OpenCLBuffer bufferOutput(static_cast<decltype(dest.data().get())>(nullptr),
+    OpenCLBuffer bufferOutput(static_cast<byte*>(nullptr),
                               size,
                               OpenCLBufferMode::WRITE);
     kernel.addArgument(bufferInput);
     kernel.addArgument(bufferOutput);
-    kernel({{size, 0, size}});
-    bufferOutput.read(dest.data().get());
+    kernel(size);
+    bufferOutput.read(dest.getData().data());
+    return dest;
 }
 
 using RGBImage = Image<RGBPixel>;

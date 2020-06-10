@@ -15,6 +15,7 @@
 #include "open_cl_context.hpp"
 
 struct WorkloadSpecification {
+    WorkloadSpecification(size globalSize, size offset, size localSize);
     size globalSize;
     size offset;
     size localSize;
@@ -24,8 +25,9 @@ class OpenCLKernel : OpenCLContextAccess, MainOpenCLProgramAccess, OpenCLBufferA
 public:
     explicit OpenCLKernel(const std::string& name);
     void addArgument(OpenCLBuffer& bufferRef);
+    void operator()(size globalSize);
     void operator()(const std::vector<WorkloadSpecification>& specification);
-
+    size getWorkGroupSize();
 private:
     static void deleteKernel(cl_kernel kernel);
 
@@ -35,6 +37,7 @@ private:
 private:
     KernelPtr kernel = KernelPtr(nullptr, &deleteKernel);
     std::optional<signed char> argumentsCount;
+    size workGroupSize;
 };
 
 

@@ -9,7 +9,7 @@
 
 FileData::FileData(const std::string& path) {
     std::ifstream input(path, std::ios::ate | std::ios::binary | std::ios::in);
-    input.exceptions(std::ios::badbit | std::ios::failbit); //TODO check why this doesn't throw
+    input.exceptions(std::ios::badbit | std::ios::failbit);
     size fileSize = input.tellg();
     data.reserve(fileSize);
     input.seekg(0, std::ios::beg);

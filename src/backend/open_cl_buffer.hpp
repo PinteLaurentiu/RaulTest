@@ -59,7 +59,11 @@ OpenCLBuffer::OpenCLBuffer(
         OpenCLBufferMode mode,
         OpenCLBufferMemoryType type) {
     int error;
-    auto bufferTemp = clCreateBuffer(context().get(), flags(mode, type), valueSize, static_cast<void*>(value), &error);
+    auto bufferTemp = clCreateBuffer(context().get(),
+            flags(mode, type),
+            valueSize,
+            reinterpret_cast<void*>(value),
+            &error);
     if (!bufferTemp)
         throw BufferCreationException(error);
     buffer = BufferPtr(bufferTemp, &deleteBuffer);

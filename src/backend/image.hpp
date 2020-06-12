@@ -161,7 +161,7 @@ inline Image<RGBPixel>::operator Image<BWPixel>() {
                               OpenCLBufferMode::WRITE);
     kernel.addArgument(bufferInput);
     kernel.addArgument(bufferOutput);
-    kernel(size);
+    kernel({size});
     bufferOutput.read(dest.getData().data());
     return dest;
 }

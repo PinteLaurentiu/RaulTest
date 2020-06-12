@@ -46,36 +46,30 @@ void OpenCLKernel::addArgument(OpenCLBuffer& bufferRef) {
     argumentsCount = argumentsCount.value_or(-1) + 1;
 }
 
-void OpenCLKernel::operator()(size globalSize) {
-    for (auto offset = 0; offset < globalSize; offset += workGroupSize) {;
-        WorkloadSpecification specification(globalSize, offset, std::min(globalSize - offset, workGroupSize));
-        (*this)({specification});
+void OpenCLKernel::operator()(size x, size y, size z) {
+    size sizes[3];
+    sizes[0] = x;
+    unsigned int index = 1;
+    if (y > 0) {
+        sizes[index] = y;
+        ++index;
     }
-}
-
-void OpenCLKernel::operator()(const std::vector<WorkloadSpecification>& specification) {
-    std::vector<size> globalSize;
-    std::vector<size> offset;
-    std::vector<size> localSize;
-    globalSize.reserve(specification.size());
-    offset.reserve(specification.size());
-    localSize.reserve(specification.size());
-    for (auto& spec : specification) {
-        globalSize.push_back(spec.globalSize);
-        offset.push_back(spec.offset);
-        localSize.push_back(spec.localSize);
+    if (z > 0) {
+        sizes[index] = z;
+        ++index;
     }
     auto errorCode = clEnqueueNDRangeKernel(commandQueue().get(),
             kernel.get(),
-            static_cast<unsigned int>(specification.size()),
-            offset.data(),
-            globalSize.data(),
-            localSize.data(),
+            index,
+            nullptr,
+            sizes,
+            nullptr,
             0,
             nullptr,
             nullptr);
-    if (errorCode != CL_SUCCESS)
+    if (errorCode != CL_SUCCESS) {
         throw KernelRunException(errorCode);
+    }
 }
 
 size OpenCLKernel::getWorkGroupSize() {

@@ -25,8 +25,7 @@ class OpenCLKernel : OpenCLContextAccess, MainOpenCLProgramAccess, OpenCLBufferA
 public:
     explicit OpenCLKernel(const std::string& name);
     void addArgument(OpenCLBuffer& bufferRef);
-    void operator()(size globalSize);
-    void operator()(const std::vector<WorkloadSpecification>& specification);
+    void operator()(size x, size y = 0, size z = 0);
     size getWorkGroupSize();
 private:
     static void deleteKernel(cl_kernel kernel);

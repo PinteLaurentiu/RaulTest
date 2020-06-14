@@ -5,9 +5,9 @@
 #ifndef RAULTESTQT_OPEN_CL_EXCEPTIONS_HPP
 #define RAULTESTQT_OPEN_CL_EXCEPTIONS_HPP
 
-#include <stdexcept>
+#include "backend_exception.hpp"
 
-class OpenCLException : public std::runtime_error {
+class OpenCLException : public BackendException {
 public:
     OpenCLException(const std::string& reason);
 };

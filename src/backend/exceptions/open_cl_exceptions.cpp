@@ -5,7 +5,7 @@
 #include <sstream>
 #include "open_cl_exceptions.hpp"
 
-OpenCLException::OpenCLException(const std::string& reason) : runtime_error(reason) {}
+OpenCLException::OpenCLException(const std::string& reason) : BackendException(reason) {}
 
 SourceIOException::SourceIOException(const std::string& path, const std::string& reason) :
     OpenCLException(createMessage(path, reason)) {}

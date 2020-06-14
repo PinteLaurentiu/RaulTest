@@ -8,7 +8,7 @@
 #include "types.hpp"
 #include "rgb_pixel.hpp"
 #include "bw_pixel.hpp"
-#include "open_cl_kernel.hpp"
+#include "src/backend/opencl/open_cl_kernel.hpp"
 #include <memory>
 
 template <typename Pixel>
@@ -161,7 +161,7 @@ inline Image<RGBPixel>::operator Image<BWPixel>() {
                               OpenCLBufferMode::WRITE);
     kernel.addArgument(bufferInput);
     kernel.addArgument(bufferOutput);
-    kernel({size});
+    kernel(size);
     bufferOutput.read(dest.getData().data());
     return dest;
 }

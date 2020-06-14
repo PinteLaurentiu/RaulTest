@@ -6,7 +6,7 @@
 #define RAULTESTQT_QPIXEL_CONVERTER_HPP
 
 
-#include <rgb_pixel.hpp>
+#include <model/rgb_pixel.hpp>
 #include <QtGui/QRgb>
 
 class QPixelConverter {

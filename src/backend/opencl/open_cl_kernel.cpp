@@ -5,9 +5,6 @@
 #include "open_cl_kernel.hpp"
 #include "main_open_cl_program.hpp"
 
-WorkloadSpecification::WorkloadSpecification(size globalSize, size offset, size localSize) :
-        globalSize(globalSize), offset(offset), localSize(localSize){}
-
 void OpenCLKernel::deleteKernel(cl_kernel kernel) {
     if (!kernel)
         return;

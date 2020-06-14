@@ -7,8 +7,8 @@
 
 #include <CL/cl.h>
 #include <memory>
-#include "types.hpp"
-#include "open_cl_exceptions.hpp"
+#include "src/backend/model/types.hpp"
+#include "src/backend/exceptions/open_cl_exceptions.hpp"
 #include "open_cl_context.hpp"
 
 enum class OpenCLBufferMode : byte {

@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include "open_cl_context.hpp"
-#include "types.hpp"
+#include "src/backend/model/types.hpp"
 
 void OpenCLContext::deleteContext(cl_context context) {
     if (context == nullptr)

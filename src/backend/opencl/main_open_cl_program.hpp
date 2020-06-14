@@ -25,7 +25,7 @@ private:
     ProgramPtr program = ProgramPtr(nullptr, &deleteProgram);
 
 private:
-    static constexpr std::string_view sourcesCommonPath = "opencl/";
+    static constexpr std::string_view sourcesCommonPath = "opencl_src/";
     static constexpr std::array<std::string_view, 1> sources = {"pixel.cl"};
 };
 

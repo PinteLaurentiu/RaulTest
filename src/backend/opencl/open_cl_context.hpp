@@ -9,7 +9,7 @@
 #include <CL/cl.h>
 #include <memory>
 #include <vector>
-#include "types.hpp"
+#include "src/backend/model/types.hpp"
 
 class OpenCLContext {
 public:

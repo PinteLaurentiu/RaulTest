@@ -5,8 +5,8 @@
 #include <bits/ios_base.h>
 #include <sstream>
 #include "main_open_cl_program.hpp"
-#include "open_cl_exceptions.hpp"
-#include "file_data.hpp"
+#include "src/backend/exceptions/open_cl_exceptions.hpp"
+#include "src/backend/model/file_data.hpp"
 
 MainOpenCLProgram& MainOpenCLProgram::instance() {
     static MainOpenCLProgram instance;

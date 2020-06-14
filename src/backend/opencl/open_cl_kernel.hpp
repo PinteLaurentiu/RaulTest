@@ -8,18 +8,11 @@
 #include <CL/cl.h>
 #include <memory>
 #include <functional>
-#include "open_cl_exceptions.hpp"
-#include "types.hpp"
+#include "src/backend/exceptions/open_cl_exceptions.hpp"
+#include "src/backend/model/types.hpp"
 #include "open_cl_buffer.hpp"
 #include "main_open_cl_program.hpp"
 #include "open_cl_context.hpp"
-
-struct WorkloadSpecification {
-    WorkloadSpecification(size globalSize, size offset, size localSize);
-    size globalSize;
-    size offset;
-    size localSize;
-};
 
 class OpenCLKernel : OpenCLContextAccess, MainOpenCLProgramAccess, OpenCLBufferAccess {
 public:

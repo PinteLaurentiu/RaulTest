@@ -17,12 +17,12 @@ public:
     ImageRepository& operator=(const ImageRepository&) = delete;
     ImageRepository& operator=(ImageRepository&&) noexcept = delete;
     static ImageRepository& instance();
-    void save(const ImageSsql& image);
-    ImageSsql get(long id);
-    std::vector<ImageSsql> getAll();
-    std::vector<ImageViewSsql> getAllView();
-    void update(long id, const ImageSsql& image);
-    void remove(long id);
+//    void save(const BWImage& image);
+//    ImageSsql get(long id);
+//    std::vector<ImageSsql> getAll();
+//    std::vector<ImageViewSsql> getAllView();
+//    void update(long id, const ImageSsql& image);
+//    void remove(long id);
 private:
     ImageRepository() = default;
 

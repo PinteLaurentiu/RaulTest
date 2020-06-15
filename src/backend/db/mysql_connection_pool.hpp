@@ -5,25 +5,22 @@
 #ifndef RAULTESTQT_MYSQL_CONNECTION_POOL_HPP
 #define RAULTESTQT_MYSQL_CONNECTION_POOL_HPP
 
-#include <mysql++/mysql++.h>
+#include <memory>
 #include "mysql_connection_info.hpp"
+#include <QSqlDatabase>
 
-class MysqlConnectionPool : public mysqlpp::ConnectionPool {
+class MysqlConnectionPool  {
 public:
     MysqlConnectionPool(const MysqlConnectionPool&) = delete;
     MysqlConnectionPool(MysqlConnectionPool&&) noexcept = delete;
     MysqlConnectionPool& operator=(const MysqlConnectionPool&) = delete;
     MysqlConnectionPool& operator=(MysqlConnectionPool&&) noexcept = delete;
     static MysqlConnectionPool& instance();
-    ~MysqlConnectionPool() override;
-    mysqlpp::Connection* create() override;
-    void destroy(mysqlpp::Connection* connection) override;
-    unsigned int max_idle_time() override;
+    ~MysqlConnectionPool();
+    QSqlDatabase getConnection();
 
 private:
     MysqlConnectionPool();
-    constexpr static unsigned int maxPoolIdleTime = 180;
-
 };
 
 

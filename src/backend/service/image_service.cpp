@@ -12,21 +12,21 @@ ImageService& ImageService::instance() {
     return instance;
 }
 
-void ImageService::saveImage(const BWImage& image, bool result) {
-    ImageConverter converter;
-    ImageRepository::instance().save(converter(image, result));
-}
-
-std::vector<ImageView> ImageService::views() {
-    ImageConverter converter;
-    return converter(ImageRepository::instance().getAllView());
-}
-
-BWImage ImageService::get(long id) {
-    ImageConverter converter;
-    return converter(ImageRepository::instance().get(id));
-}
-
-void ImageService::deleteImage(long id) {
-    ImageRepository::instance().remove(id);
-}
+//void ImageService::saveImage(const BWImage& image, bool result) {
+//    ImageConverter converter;
+//    ImageRepository::instance().save(converter(image, result));
+//}
+//
+//std::vector<ImageView> ImageService::views() {
+//    ImageConverter converter;
+//    return converter(ImageRepository::instance().getAllView());
+//}
+//
+//BWImage ImageService::get(long id) {
+//    ImageConverter converter;
+//    return converter(ImageRepository::instance().get(id));
+//}
+//
+//void ImageService::deleteImage(long id) {
+//    ImageRepository::instance().remove(id);
+//}

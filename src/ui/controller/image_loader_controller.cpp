@@ -50,7 +50,7 @@ void ImageLoaderController::searchPressed() {
                 auto qImage = reader.read();
                 auto image = converter(qImage);
                 auto bwImage = static_cast<BWImage>(image);
-                ImageService::instance().saveImage(bwImage, ui->positive->isChecked());
+//                ImageService::instance().saveImage(bwImage, ui->positive->isChecked());
             } catch (BackendException& ex) {
                 emit errorShown(std::move(ex));
             }
@@ -141,12 +141,12 @@ void ImageLoaderController::selectionChanged(const QItemSelection& current, cons
     ui->deleteButton->setEnabled(true);
     showWaitDialog();
     std::thread([this](long id) {
-        auto image = ImageService::instance().get(id);
-        QImageConverter converter;
-        auto qImage = converter(static_cast<RGBImage>(image));
-        auto pixmap = QPixmap::fromImage(qImage);
-        pixmap = pixmap.scaled(ui->picture->size(), Qt::KeepAspectRatio);
-        emit loadImage(pixmap);
+//        auto image = ImageService::instance().get(id);
+//        QImageConverter converter;
+//        auto qImage = converter(static_cast<RGBImage>(image));
+//        auto pixmap = QPixmap::fromImage(qImage);
+//        pixmap = pixmap.scaled(ui->picture->size(), Qt::KeepAspectRatio);
+//        emit loadImage(pixmap);
     }, id).detach();
 }
 
@@ -185,13 +185,14 @@ void ImageLoaderController::deletePressed() {
         return;
     }
     auto id = views.at(selection.indexes()[0].row()).id;
-    ImageService::instance().deleteImage(id);
+//    ImageService::instance().deleteImage(id);
     populate();
     scene.clear();
 }
 
 void ImageLoaderController::populate() {
-    views = ImageService::instance().views();
+    views = std::vector<ImageView>();
+//    views = ImageService::instance().views();
     QStringList list;
     for (auto view : views) {
         list.push_back(QString::fromStdString(makeText(view)));

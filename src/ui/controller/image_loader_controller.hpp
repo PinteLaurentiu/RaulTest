@@ -9,7 +9,7 @@
 #include <memory>
 #include <QtWidgets/QFileDialog>
 #include <QtCore/QStringListModel>
-#include <model/image_view.hpp>
+#include <model/image_info.hpp>
 #include <QtWidgets/QMessageBox>
 #include <exceptions/backend_exception.hpp>
 #include "../ui/ui_image_loader.h"
@@ -39,13 +39,13 @@ private:
     void setMimeTypes(QFileDialog& dialog);
     bool pathIsValid();
     void populate();
-    std::string makeText(const ImageView& view);
+    std::string makeText(const ImageInformation& view);
     void showWaitDialog();
     void hideWaitDialog();
 
 private:
     std::unique_ptr<Ui::ImageLoader> ui;
-    std::vector<ImageView> views;
+    std::vector<ImageInformation> views;
     QGraphicsScene scene;
     QStringListModel model;
     std::unique_ptr<QDialog> waitDialog;

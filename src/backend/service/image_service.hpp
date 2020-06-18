@@ -6,7 +6,7 @@
 #define RAULTESTQT_IMAGE_SERVICE_HPP
 
 #include <src/backend/model/image.hpp>
-#include <src/backend/model/image_view.hpp>
+#include <src/backend/model/image_info.hpp>
 
 class ImageService {
 public:
@@ -16,7 +16,7 @@ public:
     ImageService& operator=(ImageService&&) noexcept = delete;
     static ImageService& instance();
     void saveImage(const BWImage& image, bool result);
-    std::vector<ImageView> views();
+    std::vector<ImageInformation> views();
     BWImage get(long id);
     void deleteImage(long id);
 private:

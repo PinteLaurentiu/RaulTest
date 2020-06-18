@@ -9,7 +9,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <service/image_service.hpp>
-#include <db/mysql_connection_pool.hpp>
 
 MainWindowController::MainWindowController() : QMainWindow(nullptr), ui(std::make_unique<Ui::Main>()) {
     ui->setupUi(this);
@@ -32,11 +31,10 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr), ui(std::mak
 }
 
 void MainWindowController::openImageLoaderButtonPushed() {
-    auto& x = MysqlConnectionPool::instance();
-//    this->hide();
-//    ImageLoaderController controller(this);
-//    controller.exec();
-//    this->show();
+    this->hide();
+    ImageLoaderController controller(this);
+    controller.exec();
+    this->show();
 }
 
 void MainWindowController::openButtonPushed() {

@@ -1,6 +1,7 @@
 #include "controller/image_loader_controller.hpp"
 #include <QApplication>
 #include <src/ui/controller/main_window_controller.hpp>
+#include <QMessageBox>
 
 int main(int argc, char** argv)
 {

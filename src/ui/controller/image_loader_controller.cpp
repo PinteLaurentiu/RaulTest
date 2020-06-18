@@ -27,8 +27,12 @@ ImageLoaderController::ImageLoaderController(QWidget* parent) : QDialog(parent),
             &QItemSelectionModel::selectionChanged,
             this,
             &ImageLoaderController::selectionChanged);
-    connect(this, &ImageLoaderController::loadImage, this, &ImageLoaderController::imageLoaded);
-    connect(this, &ImageLoaderController::showDBError, this, &ImageLoaderController::errorShown);
+    connect(this, &ImageLoaderController::loadImage,
+            this, &ImageLoaderController::imageLoaded,
+            Qt::ConnectionType::BlockingQueuedConnection);
+    connect(this, &ImageLoaderController::showDBError,
+            this, &ImageLoaderController::errorShown,
+            Qt::ConnectionType::BlockingQueuedConnection);
     connect(ui->deleteButton, &QPushButton::clicked, this, &ImageLoaderController::deletePressed);
 
     populate();
@@ -50,9 +54,9 @@ void ImageLoaderController::searchPressed() {
                 auto qImage = reader.read();
                 auto image = converter(qImage);
                 auto bwImage = static_cast<BWImage>(image);
-//                ImageService::instance().saveImage(bwImage, ui->positive->isChecked());
+                ImageService::instance().saveImage(bwImage, ui->positive->isChecked());
             } catch (BackendException& ex) {
-                emit errorShown(std::move(ex));
+                emit showDBError(ex);
             }
         }
         populate();
@@ -77,8 +81,15 @@ void ImageLoaderController::browse() {
     auto dialog = QFileDialog(this);
     dialog.setFileMode(QFileDialog::ExistingFiles);
     setMimeTypes(dialog);
-    dialog.exec();
-    ui->pathText->setText(dialog.selectedFiles().join(";"));
+    if (dialog.exec() == QDialog::Rejected) {
+        ui->pathText->setText(QString());
+        return;
+    }
+    auto files = dialog.selectedFiles();
+    if (files.isEmpty())
+        ui->pathText->setText(QString());
+    else
+        ui->pathText->setText(files.join(';'));
 }
 
 void ImageLoaderController::setMimeTypes(QFileDialog& dialog) {
@@ -140,13 +151,15 @@ void ImageLoaderController::selectionChanged(const QItemSelection& current, cons
     auto id = views.at(current.indexes()[0].row()).id;
     ui->deleteButton->setEnabled(true);
     showWaitDialog();
+    std::cout << std::this_thread::get_id() << std::endl;
     std::thread([this](long id) {
-//        auto image = ImageService::instance().get(id);
-//        QImageConverter converter;
-//        auto qImage = converter(static_cast<RGBImage>(image));
-//        auto pixmap = QPixmap::fromImage(qImage);
-//        pixmap = pixmap.scaled(ui->picture->size(), Qt::KeepAspectRatio);
-//        emit loadImage(pixmap);
+        std::cout << std::this_thread::get_id() << std::endl;
+        auto image = ImageService::instance().get(id);
+        QImageConverter converter;
+        auto qImage = converter(static_cast<RGBImage>(image));
+        auto pixmap = QPixmap::fromImage(qImage);
+        pixmap = pixmap.scaled(ui->picture->size(), Qt::KeepAspectRatio);
+        emit loadImage(pixmap);
     }, id).detach();
 }
 
@@ -185,22 +198,22 @@ void ImageLoaderController::deletePressed() {
         return;
     }
     auto id = views.at(selection.indexes()[0].row()).id;
-//    ImageService::instance().deleteImage(id);
+    ImageService::instance().deleteImage(id);
     populate();
-    scene.clear();
 }
 
 void ImageLoaderController::populate() {
-    views = std::vector<ImageView>();
-//    views = ImageService::instance().views();
+    views = ImageService::instance().views();
     QStringList list;
     for (auto view : views) {
         list.push_back(QString::fromStdString(makeText(view)));
     }
     model.setStringList(list);
+    scene.clear();
+    ui->deleteButton->setEnabled(false);
 }
 
-std::string ImageLoaderController::makeText(const ImageView& view) {
+std::string ImageLoaderController::makeText(const ImageInformation& view) {
     std::ostringstream output;
     std::string result = view.result ? "positive" : "negative";
     output << view.id << " - " << view.width << "x" << view.height << " - " << result;

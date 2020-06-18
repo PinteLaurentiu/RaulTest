@@ -7,8 +7,8 @@
 
 #include <vector>
 
-#include <src/backend/db_model/image.hpp>
-#include <src/backend/db_model/image_view.hpp>
+#include <src/backend/model/image_info.hpp>
+#include <src/backend/model/database_image.hpp>
 
 class ImageRepository {
 public:
@@ -17,12 +17,13 @@ public:
     ImageRepository& operator=(const ImageRepository&) = delete;
     ImageRepository& operator=(ImageRepository&&) noexcept = delete;
     static ImageRepository& instance();
-//    void save(const BWImage& image);
-//    ImageSsql get(long id);
-//    std::vector<ImageSsql> getAll();
-//    std::vector<ImageViewSsql> getAllView();
-//    void update(long id, const ImageSsql& image);
-//    void remove(long id);
+    void save(const DatabaseImage& image);
+    DatabaseImage get(long id);
+    std::vector<ImageInformation> getAllInformation();
+    bool exists(const DatabaseImage& image);
+//    void update(long id, const ImageSsql& image); //TODO
+// std::vector<DatabaseImage> getAll(); //TODO
+    void remove(long id);
 private:
     ImageRepository() = default;
 

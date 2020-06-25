@@ -6,6 +6,7 @@
 #include <iostream>
 #include "http_client_builder.hpp"
 #include <QNetworkReply>
+#include <src/backend/model/token.hpp>
 
 const std::regex HttpClientBuilder::urlRegex("(https?://)?([a-zA-Z0-9-_~]+\\.)*[a-zA-Z0-9-_~]+(:[0-9]+)?"
                                              "((/[a-zA-Z0-9-_~]+)|(/\\{[a-zA-Z0-9-_~]+\\}))*");
@@ -67,6 +68,14 @@ void HttpClientBuilder::validateQueryParameter(const std::string& parameter, con
     }
 }
 
+HttpClientBuilder& HttpClientBuilder::withAuthentication() {
+    if (!TokenStorage::instance().hasToken())
+        return *this;
+    auto token = TokenStorage::instance().getToken().accessToken;
+    std::ostringstream authorizationHeader;
+    authorizationHeader << "Bearer " << token;
+    return withHeader("Authorization", authorizationHeader.str());
+}
 
 HttpClientBuilder &HttpClientBuilder::withHeader(std::string parameter, std::string value) {
     validateHeader(parameter, value);

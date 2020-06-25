@@ -9,8 +9,6 @@ find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Sql REQUIRED)
 find_package(Qt5Network REQUIRED)
-#find_package(MySQL++ REQUIRED)
-#find_package(MySQLclient REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -28,8 +26,6 @@ if (${EDITMODE})
 endif()
 
 include_directories(${OpenCL_INCLUDE_DIRS})
-#include_directories(${MySQL++_INCLUDE_DIRS})
-#include_directories(${MySQLclient_INCLUDE_DIR})
 link_directories(${OpenCL_LIBRARY})
 file(GLOB_RECURSE BACKEND_SRCS
         "src/backend/*.hpp"

@@ -9,6 +9,10 @@
 #include <regex>
 #include <http_client/authorization_request.hpp>
 #include <iostream>
+#include <exceptions/backend_exception.hpp>
+#include <utility>
+#include "main_window_controller.hpp"
+#include "admin_main_window_controller.hpp"
 
 LoginController::LoginController() : QMainWindow(nullptr), ui(std::make_unique<Ui::LoginForm>()) {
     ui->setupUi(this);
@@ -76,9 +80,23 @@ bool LoginController::validatePassword() {
 
 void LoginController::login(const std::string &username, const std::string &password) {
     AuthorizationRequest request(username, password);
-    request([](Token token){
-        std::cout << token.accessToken << std::endl;
-    }, [](std::exception_ptr) {
-        std::cout << "FUCK" << std::endl;
+    request([this](Token token){
+        TokenStorage::instance().saveToken(token);
+        std::unique_ptr<QMainWindow> controller = nullptr;
+        if (token.userDetails.isAdmin()) {
+            controller = std::make_unique<AdminMainWindowController>();
+        } else {
+            controller = std::make_unique<MainWindowController>();
+        }
+        controller->show();
+        OpenWindowsCache::instance().save(std::move(controller));
+        this->close();
+        OpenWindowsCache::instance().remove(this);
+    }, [this](std::exception_ptr exceptionPtr) {
+        try {
+            std::rethrow_exception(std::move(exceptionPtr));
+        } catch (BackendException& exception) {
+            QMessageBox::warning(this, "Error", exception.what());
+        }
     });
 }

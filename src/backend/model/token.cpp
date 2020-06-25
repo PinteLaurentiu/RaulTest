@@ -33,12 +33,7 @@ void TokenStorage::clearToken() {
 }
 
 Token::Token(QJsonDocument document) {
-    accessToken = document.object().value("access_token").toString().toStdString();
-    std::cout << QByteArray::fromBase64(
-            QByteArray::fromStdString(
-                    QString::fromStdString(accessToken).split(QLatin1Char('.'), QString::SkipEmptyParts)
-                        .takeAt(1)
-                        .toStdString()
-            )
-    ).toStdString();
+    auto object = document.object();
+    accessToken = object.value("access_token").toString().toStdString();
+    userDetails = UserDetails(QJsonDocument(object.value("UserDetailsData").toObject()));
 }

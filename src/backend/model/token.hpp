@@ -7,11 +7,13 @@
 
 #include <optional>
 #include <QtCore/QJsonDocument>
+#include <src/backend/dto/user_details.hpp>
 
 struct Token {
     Token() = default;
     explicit Token(QJsonDocument document);
     std::string accessToken;
+    UserDetails userDetails;
 };
 
 

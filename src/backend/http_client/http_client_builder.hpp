@@ -28,6 +28,7 @@ public:
     HttpClientBuilder& withUrlParameter(std::string parameter, std::string value);
     HttpClientBuilder& withQueryParameter(std::string parameter, std::string value);
     HttpClientBuilder& withHeader(std::string header, std::string value);
+    HttpClientBuilder& withAuthentication();
 
     template<typename BodyType>
     HttpClientBuilder& withBody(BodyType body);
@@ -42,7 +43,6 @@ public:
     HttpClientBuilder& onError(Callable&& callable);
 
     void execute();
-
 private:
     void validateUrl(const std::string& url);
     void validateParameter(const std::string& parameter, const std::string& value);

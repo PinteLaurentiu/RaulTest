@@ -13,6 +13,7 @@ ImageDto::operator QJsonDocument() const {
     object.insert("name", QJsonValue(QString::fromStdString(name)));
     object.insert("description", QJsonValue(QString::fromStdString(description)));
     object.insert("checksum", QJsonValue(QString::fromStdString(checksum)));
+    object.insert("imageType", QJsonValue(QString::fromStdString(imageTypeToString(imageType))));
     return QJsonDocument(object);
 }
 
@@ -24,5 +25,20 @@ ImageDto::ImageDto(const QJsonDocument& document) {
     name = object.value("name").toString().toStdString();
     description = object.value("description").toString().toStdString();
     checksum = object.value("checksum").toString().toStdString();
+    imageType = imageTypeFromString(object.value("imageType").toString().toStdString());
 }
 
+ImageDto::ImageDto(const AnyImage& anyImage) {
+    if (std::holds_alternative<BWImage>(anyImage)) {
+        construct<BWPixel>(std::get<BWImage>(anyImage));
+    } else {
+        construct<RGBPixel>(std::get<RGBImage>(anyImage));
+    }
+}
+
+ImageDto::operator AnyImage() const {
+    if (imageType == ImageType::BW)
+        return AnyImage(static_cast<BWImage>(*this));
+    else
+        return AnyImage(static_cast<RGBImage>(*this));
+}

@@ -11,7 +11,7 @@
 
 struct Token {
     Token() = default;
-    explicit Token(QJsonDocument document);
+    explicit Token(const QJsonDocument& document);
     std::string accessToken;
     UserDetails userDetails;
 };

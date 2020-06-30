@@ -23,3 +23,14 @@ QImage QImageConverter::operator()(const RGBImage& lib) {
     }
     return img;
 }
+
+QImage QImageConverter::operator()(BWImage& image) {
+    return (*this)(static_cast<RGBImage>(image));
+}
+
+QImage QImageConverter::operator()(AnyImage& image) {
+    if (std::holds_alternative<BWImage>(image))
+        return (*this)(std::get<BWImage>(image));
+    else
+        return (*this)(std::get<RGBImage>(image));
+}

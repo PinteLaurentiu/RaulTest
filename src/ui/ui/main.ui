@@ -73,7 +73,14 @@
     <addaction name="separator"/>
     <addaction name="exit"/>
    </widget>
+   <widget class="QMenu" name="menuTransform">
+    <property name="title">
+     <string>Transform</string>
+    </property>
+    <addaction name="actionGrayScale"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuTransform"/>
   </widget>
   <action name="openFile">
    <property name="text">
@@ -109,6 +116,14 @@
   <action name="exit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionGrayScale">
+   <property name="text">
+    <string>Gray Scale</string>
+   </property>
+   <property name="iconText">
+    <string>GrayScale</string>
    </property>
   </action>
  </widget>

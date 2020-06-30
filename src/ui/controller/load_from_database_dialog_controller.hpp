@@ -38,7 +38,6 @@ private:
     std::vector<ViewType> views;
     QGraphicsScene scene;
     QStringListModel model;
-
 };
 
 #endif //RAULTESTQT_LOAD_FROM_DATABASE_DIALOG_CONTROLLER_HPP

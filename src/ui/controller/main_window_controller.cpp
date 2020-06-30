@@ -28,6 +28,7 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr), ui(std::mak
     connect(ui->saveFile, &QAction::triggered, this, &MainWindowController::saveFilePressed);
     connect(ui->saveDatabase, &QAction::triggered, this, &MainWindowController::saveDatabasePressed);
     connect(ui->openDatabase, &QAction::triggered, this, &MainWindowController::openDatabasePressed);
+    connect(ui->actionGrayScale, &QAction::triggered, this, &MainWindowController::grayscale);
     if (TokenStorage::instance().getToken().userDetails.isAdmin()) {
         auto administration = new QAction("Administration", ui->menubar);
         ui->menubar->addAction(administration);
@@ -36,6 +37,7 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr), ui(std::mak
 }
 
 void MainWindowController::logoutPressed() {
+    TokenStorage::instance().clearToken();
     (new LoginController)->show();
     this->close();
     this->deleteLater();
@@ -54,8 +56,9 @@ void MainWindowController::openFilePressed() {
     QImageReader reader;
     reader.setFileName(files[0]);
     qImage = reader.read();
-    rgbImage = decltype(rgbImage)();
-    imageDto = decltype(imageDto)();
+    image.reset();
+    imageDto.reset();
+    imageOwner.reset();
     showImage();
     ui->saveFile->setEnabled(true);
     ui->saveDatabase->setEnabled(true);
@@ -66,6 +69,7 @@ void MainWindowController::showImage() {
         return;
     auto pixmap = QPixmap::fromImage(qImage).scaled(ui->picture->size(), Qt::KeepAspectRatio);
     scene.clear();
+    ui->descriptionText->clear();
     auto offsetX = (ui->picture->width() - pixmap.width()) / 2;
     auto offsetY = (ui->picture->height() - pixmap.height()) / 2;
     scene.addPixmap(pixmap)->setOffset(offsetX, offsetY);
@@ -141,16 +145,16 @@ void MainWindowController::saveDatabasePressed() {
 
 ImageDto& MainWindowController::getImageDto() {
     if (!imageDto)
-        imageDto = ImageDto(getRGBImage());
+        imageDto = ImageDto(getImage());
     return *imageDto;
 }
 
-RGBImage& MainWindowController::getRGBImage() {
+AnyImage& MainWindowController::getImage() {
     auto imageConverter = QImageConverter();
-    if (!rgbImage) {
-        rgbImage = imageConverter(qImage);
+    if (!image) {
+        image = imageConverter(qImage);
     }
-    return *rgbImage;
+    return *image;
 }
 
 void MainWindowController::openDatabasePressed() {
@@ -160,11 +164,11 @@ void MainWindowController::openDatabasePressed() {
     dialog.exec();
 }
 
-void MainWindowController::imageImported(ImageDto image, OwnerDto owner) {
-    imageDto = image;
-    rgbImage = static_cast<RGBImage>(*imageDto);
+void MainWindowController::imageImported(ImageDto importedImage, OwnerDto owner) {
+    imageDto = importedImage;
+    image = static_cast<AnyImage>(*imageDto);
     auto imageConverter = QImageConverter();
-    qImage = imageConverter(*rgbImage);
+    qImage = imageConverter(*image);
     imageOwner = owner;
     showImage();
     ui->saveFile->setEnabled(true);
@@ -176,5 +180,19 @@ void MainWindowController::administrationPressed() {
     controller->show();
     close();
     deleteLater();
+}
+
+void MainWindowController::grayscale() {
+    auto& currentImage = getImage();
+    if (std::holds_alternative<BWImage>(currentImage))
+        return;
+    image = AnyImage(static_cast<BWImage>(std::get<RGBImage>(currentImage)));
+    imageDto.reset();
+    imageOwner.reset();
+    auto imageConverter = QImageConverter();
+    qImage = imageConverter(*image);
+    showImage();
+    ui->saveFile->setEnabled(true);
+    ui->saveDatabase->setEnabled(true);
 }
 

@@ -151,7 +151,8 @@ void LoadFromDatabaseDialogController::showImage(ViewType& pair) {
            << "Description:" << std::endl
            << pair.first.description;
     ui->descriptionText->setText(QString::fromStdString(output.str()));
-    auto qImage = QImageConverter()(static_cast<RGBImage>(pair.first));
+    auto image = static_cast<AnyImage>(pair.first);
+    auto qImage = QImageConverter()(image);
     auto pixmap = QPixmap::fromImage(qImage).scaled(ui->imageView->size(), Qt::KeepAspectRatio);
     scene.clear();
     auto offsetX = (ui->imageView->width() - pixmap.width()) / 2;

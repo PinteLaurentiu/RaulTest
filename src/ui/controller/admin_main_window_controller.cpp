@@ -190,4 +190,3 @@ void AdminMainWindowController::closeEvent(QCloseEvent *event) {
     (new MainWindowController)->show();
     this->deleteLater();
 }
-

@@ -32,7 +32,7 @@ void TokenStorage::clearToken() {
     token = std::optional<Token>();
 }
 
-Token::Token(QJsonDocument document) {
+Token::Token(const QJsonDocument& document) {
     auto object = document.object();
     accessToken = object.value("access_token").toString().toStdString();
     userDetails = UserDetails(QJsonDocument(object.value("UserDetailsData").toObject()));

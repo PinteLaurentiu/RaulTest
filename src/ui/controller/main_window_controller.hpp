@@ -13,6 +13,8 @@
 #include <dto/owner_dto.hpp>
 #include "../ui/ui_main.h"
 
+#include <vector>
+
 class MainWindowController : public QMainWindow
 {
 Q_OBJECT
@@ -22,7 +24,7 @@ public:
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     QImage qImage;
-    std::optional<RGBImage> rgbImage;
+    std::optional<AnyImage> image;
     std::optional<ImageDto> imageDto;
     std::optional<OwnerDto> imageOwner;
     QGraphicsScene scene;
@@ -34,13 +36,14 @@ private slots:
     void saveDatabasePressed();
     void openDatabasePressed();
     void administrationPressed();
-    void imageImported(ImageDto image, OwnerDto owner);
+    void grayscale();
+    void imageImported(ImageDto importedImage, OwnerDto owner);
 
 private:
     static void setMimeTypes(QFileDialog &dialog);
     void resizeEvent(QResizeEvent* event) override;
     void showImage();
-    RGBImage& getRGBImage();
+    AnyImage& getImage();
     ImageDto& getImageDto();
 
 };

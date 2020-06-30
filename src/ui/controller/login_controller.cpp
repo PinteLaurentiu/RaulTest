@@ -77,14 +77,9 @@ bool LoginController::validatePassword() {
 
 void LoginController::login(const std::string &username, const std::string &password) {
     AuthorizationRequest request(username, password);
-    request([this](Token token){
+    request([this](const Token& token){
         TokenStorage::instance().saveToken(token);
-        QMainWindow* controller;
-        if (token.userDetails.isAdmin()) {
-            controller = new AdminMainWindowController();
-        } else {
-            controller = new MainWindowController();
-        }
+        auto controller = new MainWindowController();
         controller->show();
         this->close();
         this->deleteLater();

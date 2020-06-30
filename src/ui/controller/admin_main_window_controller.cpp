@@ -10,6 +10,7 @@
 #include <model/token.hpp>
 #include <utility>
 #include "login_controller.hpp"
+#include "main_window_controller.hpp"
 
 AdminMainWindowController::AdminMainWindowController() : QMainWindow(nullptr),
     ui(std::make_unique<Ui::AdminMainWindow>()) {
@@ -124,13 +125,14 @@ void AdminMainWindowController::selectionChanged(const QItemSelection& current, 
         return;
     }
     auto dto = dtos.at(current.indexes()[0].row());
-    if (dto.id != TokenStorage::instance().getToken().userDetails.id)
+    if (dto.id != TokenStorage::instance().getToken().userDetails.id) {
         ui->adminCheckBox->setEnabled(true);
+        ui->deleteButton->setEnabled(true);
+    }
     ui->generalistRadioButton->setEnabled(true);
     ui->rezidentRadioButton->setEnabled(true);
     ui->specialistRadioButton->setEnabled(true);
     ui->primarRadioButton->setEnabled(true);
-    ui->deleteButton->setEnabled(true);
     ui->label->setText(QString::fromStdString(makeText(dto)));
     for (auto& role : dto.roles) {
         switch (role) {
@@ -185,7 +187,7 @@ void AdminMainWindowController::deletePressed() {
 
 void AdminMainWindowController::closeEvent(QCloseEvent *event) {
     QWidget::closeEvent(event);
-    (new LoginController)->show();
+    (new MainWindowController)->show();
     this->deleteLater();
 }
 

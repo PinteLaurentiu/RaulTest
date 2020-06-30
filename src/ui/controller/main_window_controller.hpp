@@ -23,24 +23,26 @@ private:
     std::unique_ptr<Ui::MainWindow> ui;
     QImage qImage;
     std::optional<RGBImage> rgbImage;
-    std::optional<ImageDto> selectedImageDto;
+    std::optional<ImageDto> imageDto;
+    std::optional<OwnerDto> imageOwner;
     QGraphicsScene scene;
 
 private slots:
-    void exitPressed();
     void logoutPressed();
     void openFilePressed();
     void saveFilePressed();
     void saveDatabasePressed();
     void openDatabasePressed();
+    void administrationPressed();
     void imageImported(ImageDto image, OwnerDto owner);
 
 private:
     static void setMimeTypes(QFileDialog &dialog);
     void resizeEvent(QResizeEvent* event) override;
-    void resizeAndSetImage();
+    void showImage();
     RGBImage& getRGBImage();
     ImageDto& getImageDto();
+
 };
 
 

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <src/ui/conversion/qimage_converter.hpp>
 #include <exceptions/http_client_exception.hpp>
+#include <model/token.hpp>
 #include "load_from_database_dialog_controller.hpp"
 
 LoadFromDatabaseDialogController::LoadFromDatabaseDialogController(QWidget* parent) :
@@ -34,8 +35,6 @@ void LoadFromDatabaseDialogController::selectionChanged(const QItemSelection& cu
         return;
     }
     auto& view = views.at(current.indexes()[0].row());
-    ui->deleteButton->setEnabled(true);
-    ui->importButton->setEnabled(true);
     if (!view.first.imageData.isNull() && view.second.id != 0) {
         showImage(view);
         return;
@@ -120,6 +119,7 @@ void LoadFromDatabaseDialogController::populate() {
             }
             model.setStringList(list);
             scene.clear();
+            ui->descriptionText->clear();
             ui->deleteButton->setEnabled(false);
             ui->importButton->setEnabled(false);
         })
@@ -157,6 +157,10 @@ void LoadFromDatabaseDialogController::showImage(ViewType& pair) {
     auto offsetX = (ui->imageView->width() - pixmap.width()) / 2;
     auto offsetY = (ui->imageView->height() - pixmap.height()) / 2;
     scene.addPixmap(pixmap)->setOffset(offsetX, offsetY);
+    if (pair.second.id == TokenStorage::instance().getToken().userDetails.id) {
+        ui->deleteButton->setEnabled(true);
+    }
+    ui->importButton->setEnabled(true);
 }
 
 void LoadFromDatabaseDialogController::loadImageOwner(ViewType& view) {

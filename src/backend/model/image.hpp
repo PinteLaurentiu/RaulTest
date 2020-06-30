@@ -85,6 +85,7 @@ Image<Pixel>& Image<Pixel>::operator=(Image&& other) noexcept {
     width = other.width;
     height = other.height;
     data = std::move(other.data);
+    return *this;
 }
 
 template<typename Pixel>

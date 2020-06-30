@@ -7,6 +7,7 @@
 #include "load_from_database_dialog_controller.hpp"
 #include "login_controller.hpp"
 #include "save_in_database_dialog_controller.hpp"
+#include "admin_main_window_controller.hpp"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <model/token.hpp>
@@ -22,15 +23,16 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr), ui(std::mak
     ui->picture->setScene(&scene);
 
     connect(ui->openFile, &QAction::triggered, this, &MainWindowController::openFilePressed);
-    connect(ui->exit, &QAction::triggered, this, &MainWindowController::exitPressed);
+    connect(ui->exit, &QAction::triggered, &QApplication::closeAllWindows);
     connect(ui->logout, &QAction::triggered, this, &MainWindowController::logoutPressed);
     connect(ui->saveFile, &QAction::triggered, this, &MainWindowController::saveFilePressed);
     connect(ui->saveDatabase, &QAction::triggered, this, &MainWindowController::saveDatabasePressed);
     connect(ui->openDatabase, &QAction::triggered, this, &MainWindowController::openDatabasePressed);
-}
-
-void MainWindowController::exitPressed() {
-    this->close();
+    if (TokenStorage::instance().getToken().userDetails.isAdmin()) {
+        auto administration = new QAction("Administration", ui->menubar);
+        ui->menubar->addAction(administration);
+        connect(administration, &QAction::triggered, this, &MainWindowController::administrationPressed);
+    }
 }
 
 void MainWindowController::logoutPressed() {
@@ -52,14 +54,14 @@ void MainWindowController::openFilePressed() {
     QImageReader reader;
     reader.setFileName(files[0]);
     qImage = reader.read();
-    rgbImage.reset(nullptr);
-    selectedImageDto.reset(nullptr);
-    resizeAndSetImage();
+    rgbImage = decltype(rgbImage)();
+    imageDto = decltype(imageDto)();
+    showImage();
     ui->saveFile->setEnabled(true);
     ui->saveDatabase->setEnabled(true);
 }
 
-void MainWindowController::resizeAndSetImage() {
+void MainWindowController::showImage() {
     if (qImage.isNull())
         return;
     auto pixmap = QPixmap::fromImage(qImage).scaled(ui->picture->size(), Qt::KeepAspectRatio);
@@ -67,6 +69,16 @@ void MainWindowController::resizeAndSetImage() {
     auto offsetX = (ui->picture->width() - pixmap.width()) / 2;
     auto offsetY = (ui->picture->height() - pixmap.height()) / 2;
     scene.addPixmap(pixmap)->setOffset(offsetX, offsetY);
+    if (imageOwner.has_value() && imageDto.has_value()) {
+        std::ostringstream output;
+        output << "Uploaded by: " << imageOwner.value().name << std::endl
+               << "Description:" << std::endl
+               << imageDto.value().description;
+        ui->descriptionText->setText(QString::fromStdString(output.str()));
+        std::ostringstream nameLabelBuilder;
+        nameLabelBuilder << "Name: " << imageDto.value().name;
+        ui->nameLabel->setText(QString::fromStdString(nameLabelBuilder.str()));
+    }
 }
 
 void MainWindowController::setMimeTypes(QFileDialog& dialog) {
@@ -95,7 +107,7 @@ void MainWindowController::setMimeTypes(QFileDialog& dialog) {
 
 void MainWindowController::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
-    resizeAndSetImage();
+    showImage();
 }
 
 void MainWindowController::saveFilePressed() {
@@ -128,15 +140,15 @@ void MainWindowController::saveDatabasePressed() {
 }
 
 ImageDto& MainWindowController::getImageDto() {
-    if (!selectedImageDto)
-        selectedImageDto = std::make_unique<ImageDto>(getRGBImage());
-    return *selectedImageDto;
+    if (!imageDto)
+        imageDto = ImageDto(getRGBImage());
+    return *imageDto;
 }
 
 RGBImage& MainWindowController::getRGBImage() {
     auto imageConverter = QImageConverter();
     if (!rgbImage) {
-        rgbImage = std::make_unique<RGBImage>(imageConverter(qImage));
+        rgbImage = imageConverter(qImage);
     }
     return *rgbImage;
 }
@@ -149,12 +161,20 @@ void MainWindowController::openDatabasePressed() {
 }
 
 void MainWindowController::imageImported(ImageDto image, OwnerDto owner) {
-    selectedImageDto = std::make_unique<ImageDto>(image);
-    rgbImage = std::make_unique<RGBImage>(static_cast<RGBImage>(*selectedImageDto));
+    imageDto = image;
+    rgbImage = static_cast<RGBImage>(*imageDto);
     auto imageConverter = QImageConverter();
     qImage = imageConverter(*rgbImage);
-    resizeAndSetImage();
+    imageOwner = owner;
+    showImage();
     ui->saveFile->setEnabled(true);
     ui->saveDatabase->setEnabled(true);
+}
+
+void MainWindowController::administrationPressed() {
+    auto controller = new AdminMainWindowController();
+    controller->show();
+    close();
+    deleteLater();
 }
 

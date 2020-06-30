@@ -17,4 +17,9 @@ public:
     explicit HttpClientConnectionException(const std::string& reason);
 };
 
+class DownloadCorruptionException : public HttpClientException {
+public:
+    DownloadCorruptionException();
+};
+
 #endif //RAULTESTQT_HTTP_CLIENT_EXCEPTION_HPP

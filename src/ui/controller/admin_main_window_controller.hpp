@@ -10,15 +10,14 @@
 #include <memory>
 #include <../ui/ui_admin_main.h>
 #include <QtCore/QStringListModel>
-#include <dto/user_dto.hpp>
 #include <vector>
 #include <QCloseEvent>
+#include <dto/user_details.hpp>
 
 class AdminMainWindowController : public QMainWindow {
 Q_OBJECT
 public:
     AdminMainWindowController();
-    ~AdminMainWindowController() override = default;
 
 private:
     std::unique_ptr<Ui::AdminMainWindow> ui;
@@ -32,10 +31,13 @@ private slots:
 
 private:
     void populate();
-    static std::string makeText(const UserDto& dto);
+    static std::string makeText(const UserDetails& dto);
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private:
-    std::vector<UserDto> dtos;
+    std::vector<UserDetails> dtos;
     bool saveAvailable;
 };
 

@@ -9,6 +9,7 @@
 #include <QtWidgets/QMainWindow>
 #include <memory>
 #include <dto/register_dto.hpp>
+#include <iostream>
 #include "../ui/ui_login_form.h"
 
 class LoginController : public QMainWindow
@@ -16,7 +17,6 @@ class LoginController : public QMainWindow
 Q_OBJECT
 public:
     LoginController();
-    ~LoginController() override = default;
 
 private slots:
     void showPasswordChecked(int state);

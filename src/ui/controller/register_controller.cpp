@@ -5,11 +5,11 @@
 #include <QtWidgets/QMessageBox>
 #include "register_controller.hpp"
 #include "login_controller.hpp"
-#include "open_windows_cache.hpp"
 #include <regex>
 #include <dto/register_dto.hpp>
 #include <http_client/http_client_builder.hpp>
 #include <exceptions/backend_exception.hpp>
+#include <utility>
 
 RegisterController::RegisterController() : QMainWindow(nullptr), ui(std::make_unique<Ui::RegisterForm>()) {
     ui->setupUi(this);
@@ -104,23 +104,21 @@ bool RegisterController::validatePassword() {
 void RegisterController::sendRegisterRequest(const RegisterDto& dto) {
     HttpClientBuilder().withType(HttpRequestType::POST)
                        .withUrl("/unauthenticated/user")
-                       .withBody<RegisterDto>(std::move(dto))
+                       .withBody<RegisterDto>(dto)
                        .onSuccess<void>([this](){
                            QMessageBox::information(this, "Registered", "Successfully registered");
                        })
                        .onError([this](std::exception_ptr exceptionPtr){
                            try {
-                               std::rethrow_exception(exceptionPtr);
-                           } catch (BackendException exception) {
+                               std::rethrow_exception(std::move(exceptionPtr));
+                           } catch (BackendException& exception) {
                                QMessageBox::information(this, "Registration failed", exception.what());
                            }
                        }).execute();
 }
 
 void RegisterController::backClicked() {
-    auto controller = std::make_unique<LoginController>();
-    controller->show();
-    OpenWindowsCache::instance().save(std::move(controller));
+    (new LoginController)->show();
     this->close();
-    OpenWindowsCache::instance().remove(this);
+    this->deleteLater();
 }

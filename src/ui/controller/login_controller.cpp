@@ -5,14 +5,13 @@
 #include <QtWidgets/QMessageBox>
 #include "login_controller.hpp"
 #include "register_controller.hpp"
-#include "open_windows_cache.hpp"
 #include <regex>
 #include <http_client/authorization_request.hpp>
-#include <iostream>
 #include <exceptions/backend_exception.hpp>
 #include <utility>
-#include "main_window_controller.hpp"
 #include "admin_main_window_controller.hpp"
+#include "load_from_database_dialog_controller.hpp"
+#include "main_window_controller.hpp"
 
 LoginController::LoginController() : QMainWindow(nullptr), ui(std::make_unique<Ui::LoginForm>()) {
     ui->setupUi(this);
@@ -42,11 +41,9 @@ void LoginController::loginClicked() {
 }
 
 void LoginController::registerClicked() {
-    auto controller = std::make_unique<RegisterController>();
-    controller->show();
-    OpenWindowsCache::instance().save(std::move(controller));
+    (new RegisterController())->show();
     this->close();
-    OpenWindowsCache::instance().remove(this);
+    this->deleteLater();
 }
 
 bool LoginController::validateEmail() {
@@ -82,16 +79,15 @@ void LoginController::login(const std::string &username, const std::string &pass
     AuthorizationRequest request(username, password);
     request([this](Token token){
         TokenStorage::instance().saveToken(token);
-        std::unique_ptr<QMainWindow> controller = nullptr;
+        QMainWindow* controller;
         if (token.userDetails.isAdmin()) {
-            controller = std::make_unique<AdminMainWindowController>();
+            controller = new AdminMainWindowController();
         } else {
-            controller = std::make_unique<MainWindowController>();
+            controller = new MainWindowController();
         }
         controller->show();
-        OpenWindowsCache::instance().save(std::move(controller));
         this->close();
-        OpenWindowsCache::instance().remove(this);
+        this->deleteLater();
     }, [this](std::exception_ptr exceptionPtr) {
         try {
             std::rethrow_exception(std::move(exceptionPtr));

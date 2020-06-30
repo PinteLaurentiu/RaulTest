@@ -6,5 +6,6 @@
 
 HttpClientException::HttpClientException(const std::string& reason) : BackendException(reason) {}
 
-HttpClientConnectionException::HttpClientConnectionException(const std::string &reason) : HttpClientException(reason) {}
+HttpClientConnectionException::HttpClientConnectionException(const std::string& reason) : HttpClientException(reason) {}
 
+DownloadCorruptionException::DownloadCorruptionException() : HttpClientException("Downloaded content was corrupt!") {}

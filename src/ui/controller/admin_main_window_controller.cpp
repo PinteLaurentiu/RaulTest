@@ -3,14 +3,12 @@
 //
 
 #include "admin_main_window_controller.hpp"
-#include "dto/user_dto.hpp"
 #include <http_client/http_client_builder.hpp>
 #include <QtWidgets/QMessageBox>
 #include <exceptions/backend_exception.hpp>
 #include <iostream>
 #include <model/token.hpp>
 #include <utility>
-#include "open_windows_cache.hpp"
 #include "login_controller.hpp"
 
 AdminMainWindowController::AdminMainWindowController() : QMainWindow(nullptr),
@@ -51,7 +49,7 @@ void AdminMainWindowController::populate() {
         .withAuthentication()
         .withType(HttpRequestType::GET)
         .withUrl("/admin/user/all")
-        .onSuccess<std::vector<UserDto>>([this](const std::vector<UserDto>& newDtos) {
+        .onSuccess<std::vector<UserDetails>>([this](const std::vector<UserDetails>& newDtos) {
             dtos = newDtos;
             QStringList list;
             for (auto& dto : dtos) {
@@ -68,7 +66,7 @@ void AdminMainWindowController::populate() {
         }).execute();
 }
 
-std::string AdminMainWindowController::makeText(const UserDto& dto) {
+std::string AdminMainWindowController::makeText(const UserDetails& dto) {
     std::ostringstream output;
     output << dto.id << " - " << dto.email << " (" << dto.name << ")";
     return output.str();
@@ -183,5 +181,11 @@ void AdminMainWindowController::deletePressed() {
                 }
             })
             .execute();
+}
+
+void AdminMainWindowController::closeEvent(QCloseEvent *event) {
+    QWidget::closeEvent(event);
+    (new LoginController)->show();
+    this->deleteLater();
 }
 

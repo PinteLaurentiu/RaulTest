@@ -29,8 +29,6 @@ struct JsonDocumentConverterTo<std::vector<UserRole>> {
     static QJsonDocument toJsonDocument(const std::vector<UserRole>& roles);
 };
 
-
-
 class UserDetails {
 public:
     UserDetails() = default;

@@ -15,12 +15,12 @@ class RegisterController : public QMainWindow
     Q_OBJECT
 public:
     RegisterController();
-    ~RegisterController() override = default;
 
 private slots:
     void showPasswordChecked(int state);
     void submitClicked();
     void backClicked();
+
 private:
     std::unique_ptr<Ui::RegisterForm> ui;
 

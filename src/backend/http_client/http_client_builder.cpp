@@ -5,6 +5,7 @@
 #include <src/backend/exceptions/http_client_exception.hpp>
 #include <iostream>
 #include "http_client_builder.hpp"
+#include "http_multi_part_builder.hpp"
 #include <QNetworkReply>
 #include <src/backend/model/token.hpp>
 
@@ -93,7 +94,9 @@ void HttpClientBuilder::execute() {
     validateRequest();
     QNetworkRequest request;
     request.setUrl(QUrl(QString::fromStdString(requestUrl)));
-    if (requestType == HttpRequestType::POST && requestHeaders.find("content-type") == requestHeaders.end()) {
+    if (requestType == HttpRequestType::POST &&
+       (!requestBody.has_value() || std::holds_alternative<QByteArray>(requestBody.value())) &&
+       requestHeaders.find("content-type") == requestHeaders.end()) {
         requestHeaders["content-type"] = "application/json";
     }
     for (auto& header : requestHeaders) {
@@ -102,8 +105,14 @@ void HttpClientBuilder::execute() {
     QNetworkReply* reply;
     if (requestType == HttpRequestType::GET) {
         reply = networkAccessManager.value().get().get(request);
+    } else if (!requestBody.has_value()) {
+        reply = networkAccessManager.value().get().post(request, QByteArray());
+    } else if (std::holds_alternative<QByteArray>(requestBody.value())) {
+        reply = networkAccessManager.value().get().post(request, std::get<QByteArray>(requestBody.value()));
     } else {
-        reply = networkAccessManager.value().get().post(request, requestBody.value_or(QByteArray()));
+        auto body = std::get<std::unique_ptr<QHttpMultiPart>>(requestBody.value()).release();
+        reply = networkAccessManager.value().get().post(request, body);
+        body->setParent(reply);
     }
     QObject::connect(reply, &QNetworkReply::finished, [reply,
                                                        successCallback = std::move(successCallback),
@@ -164,4 +173,8 @@ void HttpClientBuilder::validateRequest() {
 HttpClientBuilder::HttpClientBuilder() {
     static QNetworkAccessManager instance;
     networkAccessManager = std::ref(instance);
+}
+
+HttpMultiPartBuilder HttpClientBuilder::withMultipartBody() {
+    return HttpMultiPartBuilder(*this);
 }

@@ -12,8 +12,11 @@
 #include <QtCore/QByteArray>
 #include <QtCore/QJsonDocument>
 #include <QtNetwork/QNetworkAccessManager>
+#include <QHttpMultiPart>
 #include "http_request_type.hpp"
 #include "json_document_converter.hpp"
+
+class HttpMultiPartBuilder;
 
 class HttpClientBuilder {
 public:
@@ -33,6 +36,8 @@ public:
     template<typename BodyType>
     HttpClientBuilder& withBody(BodyType body);
 
+    HttpMultiPartBuilder withMultipartBody();
+
     template<typename Argument = QByteArray,
             typename Callable = std::function<void(Argument)>,
             typename = std::enable_if_t<std::is_invocable_v<Callable, Argument> || std::is_void_v<Argument>>>
@@ -43,6 +48,10 @@ public:
     HttpClientBuilder& onError(Callable&& callable);
 
     void execute();
+
+private:
+    using BodyVariant = std::variant<QByteArray, std::unique_ptr<QHttpMultiPart>>;
+
 private:
     void validateUrl(const std::string& url);
     void validateParameter(const std::string& parameter, const std::string& value);
@@ -56,7 +65,7 @@ private:
     std::unordered_map<std::string, std::string> urlParameters;
     std::unordered_map<std::string, std::string> queryParameters;
     std::unordered_map<std::string, std::string> requestHeaders;
-    std::optional<QByteArray> requestBody;
+    std::optional<BodyVariant> requestBody;
     std::function<void(QByteArray)> successCallback;
     std::function<void(std::exception_ptr)> errorCallback;
     std::optional<std::reference_wrapper<QNetworkAccessManager>> networkAccessManager;
@@ -67,9 +76,11 @@ private:
     static constexpr std::string_view baseUrl = "http://localhost:8080";
 };
 
+
+
 template<typename Body>
 HttpClientBuilder& HttpClientBuilder::withBody(Body body) {
-    if constexpr (std::is_same_v<Body, QByteArray>) {
+    if constexpr (std::is_same_v<Body, QByteArray> || std::is_same_v<Body, std::unique_ptr<QHttpMultiPart>>) {
         requestBody = std::move(body);
     } else if constexpr (std::is_same_v<Body, std::string> || std::is_same_v<Body, const char*>) {
         requestBody = QByteArray::fromStdString(std::move(body));

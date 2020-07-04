@@ -59,6 +59,10 @@ __kernel void histogram_equalization_2(int size, __global unsigned char* in, __g
             }
         }
     }
+    if (max - min < 30) {
+        out[index] = 7;
+        return;
+    }
     float multiply = 255.0f / (float)(max - min);
     float offset = (float)min * multiply;
     out[index] = (float)in[index] * multiply - offset;

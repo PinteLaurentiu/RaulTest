@@ -39,7 +39,8 @@ private slots:
     void grayscale();
     void lowpass();
     void highpass();
-    void histogramEqualization();
+    void histogramLinear();
+    void histogramAdaptive();
 
 private:
     static void setMimeTypes(QFileDialog &dialog);

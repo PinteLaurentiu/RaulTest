@@ -77,10 +77,17 @@
     <property name="title">
      <string>Transform</string>
     </property>
+    <widget class="QMenu" name="menuHistogram_equalization">
+     <property name="title">
+      <string>Histogram equalization</string>
+     </property>
+     <addaction name="actionHistogramLinear"/>
+     <addaction name="actionHistogramAdaptive"/>
+    </widget>
     <addaction name="actionGrayScale"/>
     <addaction name="actionLowPass"/>
     <addaction name="actionHighPass"/>
-    <addaction name="actionHistogramEqualization"/>
+    <addaction name="menuHistogram_equalization"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTransform"/>
@@ -144,9 +151,14 @@
     <string>High pass (Edge detection)</string>
    </property>
   </action>
-  <action name="actionHistogramEqualization">
+  <action name="actionHistogramLinear">
    <property name="text">
-    <string>Histogram equalization</string>
+    <string>Linear</string>
+   </property>
+  </action>
+  <action name="actionHistogramAdaptive">
+   <property name="text">
+    <string>Adaptive</string>
    </property>
   </action>
  </widget>

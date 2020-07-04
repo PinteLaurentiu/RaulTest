@@ -10,10 +10,16 @@
 
 class HistogramEqualization {
 public:
-    HistogramEqualization() = default;
-//    BWImage operator()(BWImage& image);
+    HistogramEqualization(bool adaptive);
     BWImage operator()(BWImage& image);
+
+private:
+    bool adaptive;
     std::vector<size_t> buildHistogram(BWImage& image);
+
+    BWImage applyLinear(BWImage &image);
+
+    BWImage applyAddaptive(BWImage &image) const;
 };
 
 

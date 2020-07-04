@@ -54,7 +54,8 @@ void MainWindowController::addTransformationActions() {
     connect(ui->actionGrayScale, &QAction::triggered, this, &MainWindowController::grayscale);
     connect(ui->actionLowPass, &QAction::triggered, this, &MainWindowController::lowpass);
     connect(ui->actionHighPass, &QAction::triggered, this, &MainWindowController::highpass);
-    connect(ui->actionHistogramEqualization, &QAction::triggered, this, &MainWindowController::histogramEqualization);
+    connect(ui->actionHistogramLinear, &QAction::triggered, this, &MainWindowController::histogramLinear);
+    connect(ui->actionHistogramAdaptive, &QAction::triggered, this, &MainWindowController::histogramAdaptive);
 
     rgbActions.push_back(ui->actionGrayScale);
     rgbActions.push_back(ui->actionLowPass);
@@ -62,7 +63,8 @@ void MainWindowController::addTransformationActions() {
 
     bwActions.push_back(ui->actionLowPass);
     bwActions.push_back(ui->actionHighPass);
-    bwActions.push_back(ui->actionHistogramEqualization);
+    bwActions.push_back(ui->actionHistogramLinear);
+    bwActions.push_back(ui->actionHistogramAdaptive);
 }
 
 void MainWindowController::logoutPressed() {
@@ -243,11 +245,20 @@ void MainWindowController::highpass() {
     showImage();
 }
 
-void MainWindowController::histogramEqualization() {
+void MainWindowController::histogramLinear() {
     auto& currentImage = image.getImage();
     if (std::holds_alternative<RGBImage>(currentImage))
         return;
     auto& bwImage = std::get<BWImage>(currentImage);
-    image = ImageCache(AnyImage(HistogramEqualization()(std::get<BWImage>(currentImage))));
+    image = ImageCache(AnyImage(HistogramEqualization(false)(std::get<BWImage>(currentImage))));
+    showImage();
+}
+
+void MainWindowController::histogramAdaptive() {
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    auto& bwImage = std::get<BWImage>(currentImage);
+    image = ImageCache(AnyImage(HistogramEqualization(true)(std::get<BWImage>(currentImage))));
     showImage();
 }

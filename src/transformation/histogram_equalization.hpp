@@ -18,8 +18,7 @@ private:
     std::vector<size_t> buildHistogram(BWImage& image);
 
     BWImage applyLinear(BWImage &image);
-
-    BWImage applyAddaptive(BWImage &image) const;
+    BWImage applyAddaptive(BWImage &image);
 };
 
 

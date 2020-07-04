@@ -12,8 +12,9 @@ BWImage HistogramEqualization::operator()(BWImage &image) {
     return applyLinear(image);
 }
 
-BWImage HistogramEqualization::applyAddaptive(BWImage &image) const {
-    auto neighbourhood = (image.getWidth() * image.getHeight()) / 16;
+BWImage HistogramEqualization::applyAddaptive(BWImage &initial) {
+    auto image = applyLinear(initial);
+    auto neighbourhood = (image.getWidth() * image.getHeight()) / 24;
     long long size = 1;
     while (size * size < neighbourhood) {
         ++size;

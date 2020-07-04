@@ -84,12 +84,60 @@
      <addaction name="actionHistogramLinear"/>
      <addaction name="actionHistogramAdaptive"/>
     </widget>
+    <widget class="QMenu" name="menuLaplacian">
+     <property name="title">
+      <string>Laplacian</string>
+     </property>
+     <addaction name="actionLaplacian"/>
+     <addaction name="actionDiagonalLaplacian"/>
+     <addaction name="actionHLaplacian"/>
+     <addaction name="actionVLaplacian"/>
+     <addaction name="actionBLaplacian"/>
+    </widget>
+    <widget class="QMenu" name="menuPrewitt">
+     <property name="title">
+      <string>Prewitt</string>
+     </property>
+     <addaction name="actionHPrewitt"/>
+     <addaction name="actionVPrewitt"/>
+     <addaction name="actionBPrewitt"/>
+    </widget>
+    <widget class="QMenu" name="menuSobel">
+     <property name="title">
+      <string>Sobel</string>
+     </property>
+     <addaction name="actionHSobel"/>
+     <addaction name="actionVSobel"/>
+     <addaction name="actionBSobel"/>
+    </widget>
+    <widget class="QMenu" name="menuKirsch">
+     <property name="title">
+      <string>Kirsch</string>
+     </property>
+     <addaction name="actionHKirsch"/>
+     <addaction name="actionVKirsch"/>
+     <addaction name="actionBKirsch"/>
+    </widget>
     <addaction name="actionGrayScale"/>
     <addaction name="actionLowPass"/>
     <addaction name="actionHighPass"/>
     <addaction name="menuHistogram_equalization"/>
+    <addaction name="menuLaplacian"/>
+    <addaction name="menuPrewitt"/>
+    <addaction name="menuSobel"/>
+    <addaction name="menuKirsch"/>
+   </widget>
+   <widget class="QMenu" name="menuHistory">
+    <property name="title">
+     <string>History</string>
+    </property>
+    <addaction name="undo"/>
+    <addaction name="redo"/>
+    <addaction name="separator"/>
+    <addaction name="clearHistory"/>
    </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuHistory"/>
    <addaction name="menuTransform"/>
   </widget>
   <action name="openFile">
@@ -159,6 +207,97 @@
   <action name="actionHistogramAdaptive">
    <property name="text">
     <string>Adaptive</string>
+   </property>
+  </action>
+  <action name="actionLaplacian">
+   <property name="text">
+    <string>Laplacian</string>
+   </property>
+  </action>
+  <action name="actionHLaplacian">
+   <property name="text">
+    <string>Horizontal Laplacian</string>
+   </property>
+  </action>
+  <action name="actionVLaplacian">
+   <property name="text">
+    <string>Vertical Laplacian</string>
+   </property>
+  </action>
+  <action name="actionHPrewitt">
+   <property name="text">
+    <string>Horizontal Prewitt</string>
+   </property>
+  </action>
+  <action name="actionVPrewitt">
+   <property name="text">
+    <string>Vertical Prewitt</string>
+   </property>
+  </action>
+  <action name="actionHSobel">
+   <property name="text">
+    <string>Horizontal Sobel</string>
+   </property>
+  </action>
+  <action name="actionVSobel">
+   <property name="text">
+    <string>Vertical Sobel</string>
+   </property>
+  </action>
+  <action name="actionHKirsch">
+   <property name="text">
+    <string>Horizontal Kirsch</string>
+   </property>
+  </action>
+  <action name="actionVKirsch">
+   <property name="text">
+    <string>Vertical Kirsch</string>
+   </property>
+  </action>
+  <action name="undo">
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="redo">
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
+  <action name="clearHistory">
+   <property name="text">
+    <string>Clear history</string>
+   </property>
+  </action>
+  <action name="actionDiagonalLaplacian">
+   <property name="text">
+    <string>Diagonal Laplacian</string>
+   </property>
+  </action>
+  <action name="actionBLaplacian">
+   <property name="text">
+    <string>Biderectional Laplacian</string>
+   </property>
+  </action>
+  <action name="actionBPrewitt">
+   <property name="text">
+    <string>Biderectional Prewitt</string>
+   </property>
+  </action>
+  <action name="actionBSobel">
+   <property name="text">
+    <string>Biderectional Sobel</string>
+   </property>
+  </action>
+  <action name="actionBKirsch">
+   <property name="text">
+    <string>Biderectional Kirsch</string>
    </property>
   </action>
  </widget>

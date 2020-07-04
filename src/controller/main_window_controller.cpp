@@ -14,6 +14,9 @@
 #include "sensibility_dialog_controller.hpp"
 #include "../transformation/high_pass.hpp"
 #include "../transformation/histogram_equalization.hpp"
+#include "../transformation/matrix_transformation.hpp"
+#include "../model/image_history.hpp"
+#include "../transformation/bidirectional_matrix_transformation.hpp"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QtCore/QMimeDatabase>
@@ -35,6 +38,9 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr),
     connect(ui->saveFile, &QAction::triggered, this, &MainWindowController::saveFilePressed);
     connect(ui->saveDatabase, &QAction::triggered, this, &MainWindowController::saveDatabasePressed);
     connect(ui->openDatabase, &QAction::triggered, this, &MainWindowController::openDatabasePressed);
+    connect(ui->undo, &QAction::triggered, this, &MainWindowController::undo);
+    connect(ui->redo, &QAction::triggered, this, &MainWindowController::redo);
+    connect(ui->clearHistory, &QAction::triggered, this, &MainWindowController::clearHistory);
 
     if (TokenStorage::instance().getToken().userDetails.isAdmin()) {
         auto administration = new QAction("Administration", ui->menubar);
@@ -56,16 +62,85 @@ void MainWindowController::addTransformationActions() {
     connect(ui->actionHighPass, &QAction::triggered, this, &MainWindowController::highpass);
     connect(ui->actionHistogramLinear, &QAction::triggered, this, &MainWindowController::histogramLinear);
     connect(ui->actionHistogramAdaptive, &QAction::triggered, this, &MainWindowController::histogramAdaptive);
+    connect(ui->actionLaplacian, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::Laplacian); });
+    connect(ui->actionDiagonalLaplacian, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::DiagonalLaplacian); });
+    connect(ui->actionHLaplacian, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::HorizontalLaplacian); });
+    connect(ui->actionVLaplacian, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::VerticalLaplacian); });
+    connect(ui->actionHPrewitt, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::HorizontalPrewitt); });
+    connect(ui->actionVPrewitt, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::VerticalPrewitt); });
+    connect(ui->actionHSobel, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::HorizontalSobel); });
+    connect(ui->actionVSobel, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::VerticalSobel); });
+    connect(ui->actionHKirsch, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::HorizontalKirsch); });
+    connect(ui->actionVKirsch, &QAction::triggered, [this]{ applyMatrix(MatrixTransformationType::VerticalKirsch); });
+    connect(ui->actionBLaplacian, &QAction::triggered, [this]{ applyBidirectionalMatrix(BidirectionalMatrixTransformationType::Laplacian); });
+    connect(ui->actionBPrewitt, &QAction::triggered, [this]{ applyBidirectionalMatrix(BidirectionalMatrixTransformationType::Prewitt); });
+    connect(ui->actionBSobel, &QAction::triggered, [this]{ applyBidirectionalMatrix(BidirectionalMatrixTransformationType::Sobel); });
+    connect(ui->actionBKirsch, &QAction::triggered, [this]{ applyBidirectionalMatrix(BidirectionalMatrixTransformationType::Kirsch); });
 
     rgbActions.push_back(ui->actionGrayScale);
     rgbActions.push_back(ui->actionLowPass);
     rgbActions.push_back(ui->actionHighPass);
+    rgbActions.push_back(ui->actionLaplacian);
+    rgbActions.push_back(ui->actionDiagonalLaplacian);
+    rgbActions.push_back(ui->actionHLaplacian);
+    rgbActions.push_back(ui->actionVLaplacian);
+    rgbActions.push_back(ui->actionHPrewitt);
+    rgbActions.push_back(ui->actionVPrewitt);
+    rgbActions.push_back(ui->actionHSobel);
+    rgbActions.push_back(ui->actionVSobel);
+    rgbActions.push_back(ui->actionHKirsch);
+    rgbActions.push_back(ui->actionVKirsch);
+    rgbActions.push_back(ui->actionBLaplacian);
+    rgbActions.push_back(ui->actionBPrewitt);
+    rgbActions.push_back(ui->actionBSobel);
+    rgbActions.push_back(ui->actionBKirsch);
 
     bwActions.push_back(ui->actionLowPass);
     bwActions.push_back(ui->actionHighPass);
     bwActions.push_back(ui->actionHistogramLinear);
     bwActions.push_back(ui->actionHistogramAdaptive);
+    bwActions.push_back(ui->actionLaplacian);
+    bwActions.push_back(ui->actionDiagonalLaplacian);
+    bwActions.push_back(ui->actionHLaplacian);
+    bwActions.push_back(ui->actionVLaplacian);
+    bwActions.push_back(ui->actionHPrewitt);
+    bwActions.push_back(ui->actionVPrewitt);
+    bwActions.push_back(ui->actionHSobel);
+    bwActions.push_back(ui->actionVSobel);
+    bwActions.push_back(ui->actionHKirsch);
+    bwActions.push_back(ui->actionVKirsch);
+    bwActions.push_back(ui->actionBLaplacian);
+    bwActions.push_back(ui->actionBPrewitt);
+    bwActions.push_back(ui->actionBSobel);
+    bwActions.push_back(ui->actionBKirsch);
 }
+
+void MainWindowController::setImage(ImageCache& cache) {
+    setImage(std::move(cache));
+}
+
+void MainWindowController::setImage(ImageCache&& cache) {
+    if (image)
+        ImageHistory::instance().push(std::move(image));
+    image = std::move(cache);
+    showImage();
+}
+
+void MainWindowController::undo() {
+    image = ImageHistory::instance().popBack(std::move(image));
+    showImage();
+}
+
+void MainWindowController::redo() {
+    image = ImageHistory::instance().popFront(std::move(image));
+    showImage();
+}
+
+void MainWindowController::clearHistory() {
+    ImageHistory::instance().clear();
+    showImage();
+}
+
 
 void MainWindowController::logoutPressed() {
     TokenStorage::instance().clearToken();
@@ -86,8 +161,9 @@ void MainWindowController::openFilePressed() {
         return;
     QImageReader reader;
     reader.setFileName(files[0]);
-    image = ImageCache(reader.read());
-    showImage();
+    ImageHistory::instance().clear();
+    image = ImageCache(QImage());
+    setImage(ImageCache(reader.read()));
 }
 
 void MainWindowController::saveFilePressed() {
@@ -145,8 +221,9 @@ void MainWindowController::openDatabasePressed() {
 }
 
 void MainWindowController::imageImported(ImageCache& importedImage) {
-    image = std::move(importedImage);
-    showImage();
+    ImageHistory::instance().clear();
+    image = ImageCache(QImage());
+    setImage(importedImage);
 }
 
 void MainWindowController::saveDatabasePressed() {
@@ -168,6 +245,9 @@ void MainWindowController::showImage() {
     ui->nameLabel->clear();
     ui->saveFile->setEnabled(false);
     ui->saveDatabase->setEnabled(false);
+    ui->undo->setEnabled(false);
+    ui->redo->setEnabled(false);
+    ui->clearHistory->setEnabled(false);
     disableTransformations();
     if (!image)
         return;
@@ -188,6 +268,9 @@ void MainWindowController::showImage() {
     enableTransformations();
     ui->saveFile->setEnabled(true);
     ui->saveDatabase->setEnabled(true);
+    ui->undo->setEnabled(ImageHistory::instance().hasBack());
+    ui->redo->setEnabled(ImageHistory::instance().hasFront());
+    ui->clearHistory->setEnabled(ImageHistory::instance().hasFront() || ImageHistory::instance().hasBack());
 }
 
 void MainWindowController::disableTransformations() {
@@ -215,8 +298,7 @@ void MainWindowController::grayscale() {
     auto& currentImage = image.getImage();
     if (std::holds_alternative<BWImage>(currentImage))
         return;
-    image = ImageCache(AnyImage(Grayscale()(std::get<RGBImage>(currentImage))));
-    showImage();
+    setImage(ImageCache(AnyImage(Grayscale()(std::get<RGBImage>(currentImage)))));
 }
 
 void MainWindowController::lowpass() {
@@ -226,10 +308,9 @@ void MainWindowController::lowpass() {
         return;
     auto& currentImage = image.getImage();
     if (std::holds_alternative<RGBImage>(currentImage))
-        image = ImageCache(AnyImage(LowPass(dialog.spinnerValue.value())(std::get<RGBImage>(currentImage))));
+        setImage(ImageCache(AnyImage(LowPass(dialog.spinnerValue.value())(std::get<RGBImage>(currentImage)))));
     else
-        image = ImageCache(AnyImage(LowPass(dialog.spinnerValue.value())(std::get<BWImage>(currentImage))));
-    showImage();
+        setImage(ImageCache(AnyImage(LowPass(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
 }
 
 void MainWindowController::highpass() {
@@ -239,26 +320,37 @@ void MainWindowController::highpass() {
         return;
     auto& currentImage = image.getImage();
     if (std::holds_alternative<RGBImage>(currentImage))
-        image = ImageCache(AnyImage(HighPass(dialog.spinnerValue.value())(std::get<RGBImage>(currentImage))));
+        setImage(ImageCache(AnyImage(HighPass(dialog.spinnerValue.value())(std::get<RGBImage>(currentImage)))));
     else
-        image = ImageCache(AnyImage(HighPass(dialog.spinnerValue.value())(std::get<BWImage>(currentImage))));
-    showImage();
+        setImage(ImageCache(AnyImage(HighPass(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
 }
 
 void MainWindowController::histogramLinear() {
     auto& currentImage = image.getImage();
     if (std::holds_alternative<RGBImage>(currentImage))
         return;
-    auto& bwImage = std::get<BWImage>(currentImage);
-    image = ImageCache(AnyImage(HistogramEqualization(false)(std::get<BWImage>(currentImage))));
-    showImage();
+    setImage(ImageCache(AnyImage(HistogramEqualization(false)(std::get<BWImage>(currentImage)))));
 }
 
 void MainWindowController::histogramAdaptive() {
     auto& currentImage = image.getImage();
     if (std::holds_alternative<RGBImage>(currentImage))
         return;
-    auto& bwImage = std::get<BWImage>(currentImage);
-    image = ImageCache(AnyImage(HistogramEqualization(true)(std::get<BWImage>(currentImage))));
-    showImage();
+    setImage(ImageCache(AnyImage(HistogramEqualization(true)(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::applyMatrix(MatrixTransformationType type) {
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        setImage(ImageCache(AnyImage(MatrixTransformation(type)(std::get<RGBImage>(currentImage)))));
+    else
+        setImage(ImageCache(AnyImage(MatrixTransformation(type)(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::applyBidirectionalMatrix(BidirectionalMatrixTransformationType type) {
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<RGBImage>(currentImage)))));
+    else
+        setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<BWImage>(currentImage)))));
 }

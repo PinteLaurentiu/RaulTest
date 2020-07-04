@@ -10,6 +10,7 @@
 #include <QtWidgets/QFileDialog>
 #include "../ui/ui_main.h"
 #include "../model/image_cache.hpp"
+#include "../model/matrix_transformation_type.hpp"
 
 #include <vector>
 
@@ -41,6 +42,11 @@ private slots:
     void highpass();
     void histogramLinear();
     void histogramAdaptive();
+    void applyMatrix(MatrixTransformationType type);
+    void applyBidirectionalMatrix(BidirectionalMatrixTransformationType type);
+    void undo();
+    void redo();
+    void clearHistory();
 
 private:
     static void setMimeTypes(QFileDialog &dialog);
@@ -49,7 +55,8 @@ private:
     void addTransformationActions();
     void disableTransformations();
     void enableTransformations();
-
+    void setImage(ImageCache& cache);
+    void setImage(ImageCache&& cache);
 };
 
 

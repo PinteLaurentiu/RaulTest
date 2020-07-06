@@ -31,8 +31,6 @@
 #include <QImageWriter>
 #include <QGraphicsPixmapItem>
 #include <filesystem>
-#include <queue>
-#include <random>
 
 MainWindowController::MainWindowController() : QMainWindow(nullptr),
     ui(std::make_unique<Ui::MainWindow>()),
@@ -51,6 +49,7 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr),
     connect(ui->redo, &QAction::triggered, this, &MainWindowController::redo);
     connect(ui->clearHistory, &QAction::triggered, this, &MainWindowController::clearHistory);
     connect(ui->original, &QAction::triggered, this, &MainWindowController::returnToOriginal);
+    connect(this, &MainWindowController::newImage, this, &MainWindowController::showImage, Qt::QueuedConnection);
 
     if (TokenStorage::instance().getToken().userDetails.isAdmin()) {
         auto administration = new QAction("Administration", ui->menubar);
@@ -145,36 +144,31 @@ void MainWindowController::addTransformationActions() {
     bwActions.push_back(ui->actionWatershed);
 }
 
-void MainWindowController::setImage(ImageCache& cache) {
-    setImage(std::move(cache));
-}
-
 void MainWindowController::setImage(ImageCache&& cache) {
     if (image)
         ImageHistory::instance().push(std::move(image));
     image = std::move(cache);
-    showImage();
+    emit newImage();
 }
 
 void MainWindowController::undo() {
     image = ImageHistory::instance().popBack(std::move(image));
-    showImage();
+    emit newImage();
 }
 
 void MainWindowController::redo() {
     image = ImageHistory::instance().popFront(std::move(image));
-    showImage();
+    emit newImage();
 }
 
 void MainWindowController::clearHistory() {
     ImageHistory::instance().clear();
-    showImage();
+    emit newImage();
 }
-
 
 void MainWindowController::returnToOriginal() {
     image = ImageHistory::instance().returnToOriginal(std::move(image));
-    showImage();
+    emit newImage();
 }
 
 void MainWindowController::logoutPressed() {
@@ -194,11 +188,13 @@ void MainWindowController::openFilePressed() {
     auto files = dialog.selectedFiles();
     if (files.isEmpty())
         return;
-    QImageReader reader;
-    reader.setFileName(files[0]);
-    ImageHistory::instance().clear();
-    image = ImageCache(QImage());
-    setImage(ImageCache(reader.read()));
+    WaitDialogController(this, [this, filename = files[0]] {
+        QImageReader reader;
+        reader.setFileName(filename);
+        ImageHistory::instance().clear();
+        image = ImageCache(QImage());
+        setImage(ImageCache(reader.read()));
+    }).exec();
 }
 
 void MainWindowController::saveFilePressed() {
@@ -212,16 +208,22 @@ void MainWindowController::saveFilePressed() {
     auto files = dialog.selectedFiles();
     if (files.isEmpty())
         return;
-    QImageWriter writer;
-    writer.setFileName(files[0]);
-    bool status = writer.write(image.getQImage());
-    if (!status && writer.error() == QImageWriter::UnsupportedFormatError) {
-        writer.setFormat("PNG");
-        status = writer.write(image.getQImage());
-    }
-    if (!status) {
-        QMessageBox::critical(this, "Error", "Could not save file!");
-    }
+    WaitDialogController(this, [this, filename = files[0]] {
+        QImageWriter writer;
+        writer.setFileName(filename);
+        bool status = writer.write(image.getQImage());
+        if (!status && writer.error() == QImageWriter::UnsupportedFormatError) {
+            writer.setFormat("PNG");
+            status = writer.write(image.getQImage());
+        }
+        if (!status) {
+            emit saveFailed();
+        }
+    }).exec();
+}
+
+void MainWindowController::showSaveFailedMessage() {
+    QMessageBox::critical(this, "Error", "Could not save file!");
 }
 
 void MainWindowController::setMimeTypes(QFileDialog& dialog) {
@@ -258,7 +260,7 @@ void MainWindowController::openDatabasePressed() {
 void MainWindowController::imageImported(ImageCache& importedImage) {
     ImageHistory::instance().clear();
     image = ImageCache(QImage());
-    setImage(importedImage);
+    setImage(std::move(importedImage));
 }
 
 void MainWindowController::saveDatabasePressed() {
@@ -330,10 +332,12 @@ void MainWindowController::enableTransformations() {
 }
 
 void MainWindowController::grayscale() {
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<BWImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(Grayscale()(std::get<RGBImage>(currentImage)))));
+    WaitDialogController(this, [this] {
+        auto &currentImage = image.getImage();
+        if (std::holds_alternative<BWImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Grayscale()(std::get<RGBImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::lowpass() {
@@ -341,11 +345,13 @@ void MainWindowController::lowpass() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        setImage(ImageCache(AnyImage(LowPass(dialog.spinnerValue.value())(std::get<RGBImage>(currentImage)))));
-    else
-        setImage(ImageCache(AnyImage(LowPass(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+        auto &currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            setImage(ImageCache(AnyImage(LowPass(value)(std::get<RGBImage>(currentImage)))));
+        else
+            setImage(ImageCache(AnyImage(LowPass(value)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::highpass() {
@@ -353,55 +359,70 @@ void MainWindowController::highpass() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
+    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+
     auto& currentImage = image.getImage();
     if (std::holds_alternative<RGBImage>(currentImage))
-        setImage(ImageCache(AnyImage(HighPass(dialog.spinnerValue.value())(std::get<RGBImage>(currentImage)))));
+        setImage(ImageCache(AnyImage(HighPass(value)(std::get<RGBImage>(currentImage)))));
     else
-        setImage(ImageCache(AnyImage(HighPass(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+        setImage(ImageCache(AnyImage(HighPass(value)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::histogramLinear() {
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(HistogramEqualization(false)(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(HistogramEqualization(false)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::histogramAdaptive() {
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(HistogramEqualization(true)(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(HistogramEqualization(true)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::applyMatrix(MatrixTransformationType type) {
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        setImage(ImageCache(AnyImage(MatrixTransformation(type)(std::get<RGBImage>(currentImage)))));
-    else
-        setImage(ImageCache(AnyImage(MatrixTransformation(type)(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this, type] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            setImage(ImageCache(AnyImage(MatrixTransformation(type)(std::get<RGBImage>(currentImage)))));
+        else
+            setImage(ImageCache(AnyImage(MatrixTransformation(type)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::applyBidirectionalMatrix(BidirectionalMatrixTransformationType type) {
+    WaitDialogController(this, [this, type] {
     auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<RGBImage>(currentImage)))));
-    else
-        setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<BWImage>(currentImage)))));
+        if (std::holds_alternative<RGBImage>(currentImage))
+            setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<RGBImage>(currentImage)))));
+        else
+            setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::otsuThresholding() {
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(OtsuThresholding()(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(OtsuThresholding()(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::pseudocoloration() {
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(Pseudocoloration()(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Pseudocoloration()(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::erosion() {
@@ -409,10 +430,12 @@ void MainWindowController::erosion() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(Erosion(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Erosion(value)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::dilation() {
@@ -420,10 +443,12 @@ void MainWindowController::dilation() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(Dilation(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Dilation(value)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::closing() {
@@ -431,10 +456,12 @@ void MainWindowController::closing() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(Closing(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Closing(value)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::opening() {
@@ -442,101 +469,137 @@ void MainWindowController::opening() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(Opening(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Opening(value)(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::watershed() {
-    auto& currentImage = image.getImage();
-    if (std::holds_alternative<RGBImage>(currentImage))
-        return;
-    setImage(ImageCache(AnyImage(Watershed()(std::get<BWImage>(currentImage)))));
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Watershed()(std::get<BWImage>(currentImage)))));
+    }).exec();
 }
 
 void MainWindowController::quick1() {
-    BWImage bwImage;
-    auto& currentImage = image.getImage();
-    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
-    if (std::holds_alternative<RGBImage>(currentImage)) {
-        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
-    } else {
-        imageReference = std::ref(std::get<BWImage>(currentImage));
-    }
-    auto t1 = LowPass(3)(imageReference.get());
-    auto t2 = HighPass(7)(t1);
-    auto t3 = HistogramEqualization(false)(t2);
-    setImage(ImageCache(AnyImage(std::move(t3))));
+    WaitDialogController(this, [this] {
+        BWImage bwImage;
+        auto& currentImage = image.getImage();
+        std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+        if (std::holds_alternative<RGBImage>(currentImage)) {
+            bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+        } else {
+            imageReference = std::ref(std::get<BWImage>(currentImage));
+        }
+        auto t1 = LowPass(3)(imageReference.get());
+        auto t2 = HighPass(7)(t1);
+        auto t3 = HistogramEqualization(false)(t2);
+        setImage(ImageCache(AnyImage(std::move(t3))));
+    }).exec();
 }
 
 void MainWindowController::quick2() {
-    BWImage bwImage;
-    auto& currentImage = image.getImage();
-    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
-    if (std::holds_alternative<RGBImage>(currentImage)) {
-        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
-    } else {
-        imageReference = std::ref(std::get<BWImage>(currentImage));
-    }
-    auto t1 = BidirectionalMatrixTransformation(BidirectionalMatrixTransformationType::Kirsch)(imageReference.get());
-    auto t2 = LowPass(3)(t1);
-    setImage(ImageCache(AnyImage(std::move(t2))));
+    WaitDialogController(this, [this] {
+        BWImage bwImage;
+        auto& currentImage = image.getImage();
+        std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+        if (std::holds_alternative<RGBImage>(currentImage)) {
+            bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+        } else {
+            imageReference = std::ref(std::get<BWImage>(currentImage));
+        }
+        auto t1 = BidirectionalMatrixTransformation(BidirectionalMatrixTransformationType::Kirsch)(imageReference.get());
+        auto t2 = LowPass(3)(t1);
+        setImage(ImageCache(AnyImage(std::move(t2))));
+    }).exec();
 }
+
 void MainWindowController::quick3() {
-    BWImage bwImage;
-    auto& currentImage = image.getImage();
-    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
-    if (std::holds_alternative<RGBImage>(currentImage)) {
-        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
-    } else {
-        imageReference = std::ref(std::get<BWImage>(currentImage));
-    }
-    auto t1 = HighPass(9)(imageReference.get());
-    auto t2 = HistogramEqualization(false)(t1);
-    auto t3 = OtsuThresholding()(t2);
-    setImage(ImageCache(AnyImage(std::move(t3))));
+    WaitDialogController(this, [this] {
+        BWImage bwImage;
+        auto& currentImage = image.getImage();
+        std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+        if (std::holds_alternative<RGBImage>(currentImage)) {
+            bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+        } else {
+            imageReference = std::ref(std::get<BWImage>(currentImage));
+        }
+        auto t1 = HighPass(9)(imageReference.get());
+        auto t2 = HistogramEqualization(false)(t1);
+        auto t3 = OtsuThresholding()(t2);
+        setImage(ImageCache(AnyImage(std::move(t3))));
+    }).exec();
 }
+
 void MainWindowController::quick4() {
-    BWImage bwImage;
-    auto& currentImage = image.getImage();
-    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
-    if (std::holds_alternative<RGBImage>(currentImage)) {
-        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
-    } else {
-        imageReference = std::ref(std::get<BWImage>(currentImage));
-    }
-    auto t1 = HistogramEqualization(false)(imageReference.get());
-    auto t2 = Pseudocoloration()(t1);
-    setImage(ImageCache(AnyImage(std::move(t2))));
+    WaitDialogController(this, [this] {
+        BWImage bwImage;
+        auto& currentImage = image.getImage();
+        std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+        if (std::holds_alternative<RGBImage>(currentImage)) {
+            bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+        } else {
+            imageReference = std::ref(std::get<BWImage>(currentImage));
+        }
+        auto t1 = HistogramEqualization(false)(imageReference.get());
+        auto t2 = Pseudocoloration()(t1);
+        setImage(ImageCache(AnyImage(std::move(t2))));
+    }).exec();
 }
+
 void MainWindowController::quick5() {
-    BWImage bwImage;
-    auto& currentImage = image.getImage();
-    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
-    if (std::holds_alternative<RGBImage>(currentImage)) {
-        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
-    } else {
-        imageReference = std::ref(std::get<BWImage>(currentImage));
-    }
-    auto t1 = Opening(5)(imageReference.get());
-    auto t2 = OtsuThresholding()(t1);
-    auto t3 = Watershed()(t2);
-    setImage(ImageCache(AnyImage(std::move(t3))));
+    WaitDialogController(this, [this] {
+        BWImage bwImage;
+        auto& currentImage = image.getImage();
+        std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+        if (std::holds_alternative<RGBImage>(currentImage)) {
+            bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+        } else {
+            imageReference = std::ref(std::get<BWImage>(currentImage));
+        }
+        auto t1 = Opening(5)(imageReference.get());
+        auto t2 = OtsuThresholding()(t1);
+        auto t3 = Watershed()(t2);
+        setImage(ImageCache(AnyImage(std::move(t3))));
+    }).exec();
 }
 
 void MainWindowController::quick6() {
-    BWImage bwImage;
-    auto& currentImage = image.getImage();
-    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
-    if (std::holds_alternative<RGBImage>(currentImage)) {
-        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
-    } else {
-        imageReference = std::ref(std::get<BWImage>(currentImage));
-    }
-    auto t1 = HistogramEqualization(false)(imageReference.get());
-    auto t2 = Pseudocoloration()(t1);
-    auto t3 = Grayscale()(t2);
-    auto t4 = OtsuThresholding()(t3);
-    setImage(ImageCache(AnyImage(std::move(t4))));
+    WaitDialogController(this, [this] {
+        BWImage bwImage;
+        auto& currentImage = image.getImage();
+        std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+        if (std::holds_alternative<RGBImage>(currentImage)) {
+            bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+        } else {
+            imageReference = std::ref(std::get<BWImage>(currentImage));
+        }
+        auto t1 = HistogramEqualization(false)(imageReference.get());
+        auto t2 = Pseudocoloration()(t1);
+        auto t3 = Grayscale()(t2);
+        auto t4 = OtsuThresholding()(t3);
+        setImage(ImageCache(AnyImage(std::move(t4))));
+    }).exec();
 }
+
+/* TODO:
+ *
+ * Wait message
+ * Error handling
+ * Remove the description name thing
+ * Zoom
+ * Watershed on GPU
+ * Database: Email registration
+ * Color inversion
+ * Gaussian filter
+ * Canny edge detection
+ *
+ * 
+ *
+ * Maybe clean the code
+ */

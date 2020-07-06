@@ -119,6 +119,9 @@ RGBImage Watershed::pseudocolorateOnLabels(const BWImage &image, std::vector<int
     auto width = image.getWidth();
     auto height = image.getHeight();
     RGBImage destination(width, height);
+    if (colors.size() < 2) {
+        return destination;
+    }
     for (int i = 0; i < width; ++i) {
         for (int j = 0; j < height; ++j) {
             auto value = colors[labels[index(i, j, width)]] * 1276 / (colors.size() - 1);

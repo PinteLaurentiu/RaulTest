@@ -11,6 +11,7 @@
 #include "../ui/ui_main.h"
 #include "../model/image_cache.hpp"
 #include "../model/matrix_transformation_type.hpp"
+#include "wait_dialog_controller.hpp"
 
 #include <vector>
 
@@ -27,6 +28,10 @@ private:
     std::vector<QAction*> bwActions;
     std::vector<QAction*> rgbActions;
 
+signals:
+    void newImage();
+    void saveFailed();
+
 private slots:
     void logoutPressed();
     void openFilePressed();
@@ -39,6 +44,7 @@ private slots:
     void redo();
     void clearHistory();
     void returnToOriginal();
+    void showSaveFailedMessage();
 
 private slots:
     void grayscale();
@@ -69,9 +75,7 @@ private:
     void addTransformationActions();
     void disableTransformations();
     void enableTransformations();
-    void setImage(ImageCache& cache);
     void setImage(ImageCache&& cache);
 };
-
 
 #endif //RAULTESTQT_MAIN_WINDOW_CONTROLLER_HPP

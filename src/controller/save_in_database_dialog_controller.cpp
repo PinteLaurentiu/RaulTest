@@ -28,6 +28,7 @@ void SaveInDatabaseDialogController::savePressed() {
     auto description = dto.description;
     dto.name = ui->nameInput->text().trimmed().toStdString();
     dto.description = ui->descriptionInput->toPlainText().toStdString();
+    dto.id = 0;
     HttpClientBuilder().withType(HttpRequestType::POST)
             .withUrl("/authenticated/image")
             .withAuthentication()

@@ -14,7 +14,7 @@ RegisterController::RegisterController() : QMainWindow(nullptr), ui(std::make_un
     ui->setupUi(this);
     connect(ui->showPasswordCheckBox, &QCheckBox::stateChanged, this, &RegisterController::showPasswordChecked);
     connect(ui->submitButton, &QCheckBox::clicked, this, &RegisterController::submitClicked);
-    connect(ui->goBackButton, &QCheckBox::clicked, this, &RegisterController::backClicked);
+    connect(ui->goBackButton, &QCheckBox::clicked, [this](){backClicked();});
 }
 
 void RegisterController::showPasswordChecked(int state) {
@@ -105,7 +105,12 @@ void RegisterController::sendRegisterRequest(RegisterDto& dto) {
                        .withUrl("/unauthenticated/user")
                        .withBody<RegisterDto>(std::move(dto))
                        .onSuccess<void>([this](){
-                           QMessageBox::information(this, "Registered", "Successfully registered");
+                           std::ostringstream message;
+                           message << "Successfully registered! This account is by default disabled! "
+                                   << "To enable your account send an email to documents.raulapp@gmail.com "
+                                   << "with your documents that proves your rank as a doctor!";
+                           QMessageBox::information(this, "Registered", QString::fromStdString(message.str()));
+                           backClicked(ui->emailField->text().toStdString());
                        })
                        .onError([this](std::exception_ptr exceptionPtr){
                            try {
@@ -116,8 +121,10 @@ void RegisterController::sendRegisterRequest(RegisterDto& dto) {
                        }).execute();
 }
 
-void RegisterController::backClicked() {
-    (new LoginController)->show();
+void RegisterController::backClicked(const std::string& email) {
+    auto controller = new LoginController();
+    controller->setEmail(email);
+    controller->show();
     this->close();
     this->deleteLater();
 }

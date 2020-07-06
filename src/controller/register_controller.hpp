@@ -19,7 +19,7 @@ public:
 private slots:
     void showPasswordChecked(int state);
     void submitClicked();
-    void backClicked();
+    void backClicked(const std::string& email = "");
 
 private:
     std::unique_ptr<Ui::RegisterForm> ui;

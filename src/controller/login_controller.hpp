@@ -16,6 +16,7 @@ class LoginController : public QMainWindow
 Q_OBJECT
 public:
     LoginController();
+    void setEmail(const std::string& email);
 
 private slots:
     void showPasswordChecked(int state);

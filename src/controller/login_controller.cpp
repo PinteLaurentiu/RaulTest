@@ -90,3 +90,7 @@ void LoginController::login(const std::string &username, const std::string &pass
         }
     });
 }
+
+void LoginController::setEmail(const std::string& email) {
+    ui->emailField->setText(QString::fromStdString(email));
+}

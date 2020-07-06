@@ -14,7 +14,7 @@ SensibilityDialogController::SensibilityDialogController(QWidget *parent) : QDia
 
 void SensibilityDialogController::applyPressed() {
     auto value = ui->spinBox->value();
-    if (value < 2 || value > 19) {
+    if (value < 2 || value > 30) {
         QMessageBox::warning(this, "Invalid value", "Value must be between 2 and 19!");
         return;
     }

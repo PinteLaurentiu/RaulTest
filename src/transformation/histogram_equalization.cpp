@@ -93,3 +93,32 @@ std::vector<size_t> HistogramEqualization::buildHistogram(BWImage &image) {
 }
 
 HistogramEqualization::HistogramEqualization(bool adaptive) : adaptive(adaptive) {}
+
+byte HistogramEqualization::getOtsuThreshold(BWImage& image) {
+    auto histogram = buildHistogram(image);
+    unsigned long long sum = 0;
+    unsigned long long dotProduct = 0;
+    for (auto i = 0; i < histogram.size(); ++i) {
+        sum += histogram[i];
+        dotProduct += histogram[i] * i;
+    }
+    auto wB = 0ull;
+    auto sumB = 0ull;
+    auto maximum = 0.0f;
+    auto level = 0;
+    for (auto i = 0; i < histogram.size(); ++i) {
+        auto wF = sum - wB;
+        if (wB > 0 && wF > 0) {
+            auto mF = static_cast<float>(dotProduct - sumB) / wF;
+            auto factor = (static_cast<float>(sumB) / wB) - mF;
+            auto value = static_cast<float>(wB) * wF * factor * factor;
+            if (value >= maximum) {
+                level = i;
+                maximum = value;
+            }
+        }
+        wB = wB + histogram[i];
+        sumB = sumB + i * histogram[i];
+    }
+    return level;
+}

@@ -20,12 +20,13 @@ public:
     void push(ImageCache&& image);
     ImageCache popBack(ImageCache&& image);
     ImageCache popFront(ImageCache&& image);
+    ImageCache returnToOriginal(ImageCache&& image);
     bool hasBack();
     bool hasFront();
     void clear();
 private:
     ImageHistory() = default;
-    using Stack = std::stack<ImageCache, std::vector<ImageCache>>;
+    using Stack = std::vector<ImageCache>;
     Stack backStack;
     Stack frontStack;
 };

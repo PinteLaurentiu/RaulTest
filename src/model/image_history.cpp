@@ -5,21 +5,21 @@
 #include "image_history.hpp"
 
 void ImageHistory::push(ImageCache&& image) {
-    backStack.push(std::move(image));
+    backStack.push_back(std::move(image));
     frontStack = Stack();
 }
 
 ImageCache ImageHistory::popBack(ImageCache&& image) {
-    frontStack.push(std::move(image));
-    auto oldImage = std::move(backStack.top());
-    backStack.pop();
+    frontStack.push_back(std::move(image));
+    auto oldImage = std::move(backStack.back());
+    backStack.pop_back();
     return oldImage;
 }
 
 ImageCache ImageHistory::popFront(ImageCache&& image) {
-    backStack.push(std::move(image));
-    auto oldImage = std::move(frontStack.top());
-    frontStack.pop();
+    backStack.push_back(std::move(image));
+    auto oldImage = std::move(frontStack.back());
+    frontStack.pop_back();
     return oldImage;
 }
 
@@ -39,5 +39,10 @@ bool ImageHistory::hasBack() {
 
 bool ImageHistory::hasFront() {
     return !frontStack.empty();
+}
+
+ImageCache ImageHistory::returnToOriginal(ImageCache&& image) {
+    push(std::move(image));
+    return ImageCache(backStack.front().getQImage());
 }
 

@@ -10,12 +10,12 @@
 
 class HistogramEqualization {
 public:
-    HistogramEqualization(bool adaptive);
+    explicit HistogramEqualization(bool adaptive);
     BWImage operator()(BWImage& image);
-
+    static byte getOtsuThreshold(BWImage& image);
 private:
     bool adaptive;
-    std::vector<size_t> buildHistogram(BWImage& image);
+    static std::vector<size_t> buildHistogram(BWImage& image);
 
     BWImage applyLinear(BWImage &image);
     BWImage applyAddaptive(BWImage &image);

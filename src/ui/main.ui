@@ -118,6 +118,22 @@
      <addaction name="actionVKirsch"/>
      <addaction name="actionBKirsch"/>
     </widget>
+    <widget class="QMenu" name="menuSegmentations">
+     <property name="title">
+      <string>Segmentations</string>
+     </property>
+     <addaction name="actionOtsuThreshold"/>
+     <addaction name="actionWatershed"/>
+    </widget>
+    <widget class="QMenu" name="menuMorphology">
+     <property name="title">
+      <string>Morphology</string>
+     </property>
+     <addaction name="actionErosion"/>
+     <addaction name="actionDilation"/>
+     <addaction name="actionClosing"/>
+     <addaction name="actionOpening"/>
+    </widget>
     <addaction name="actionGrayScale"/>
     <addaction name="actionLowPass"/>
     <addaction name="actionHighPass"/>
@@ -126,6 +142,9 @@
     <addaction name="menuPrewitt"/>
     <addaction name="menuSobel"/>
     <addaction name="menuKirsch"/>
+    <addaction name="menuSegmentations"/>
+    <addaction name="menuMorphology"/>
+    <addaction name="actionPseudocoloration"/>
    </widget>
    <widget class="QMenu" name="menuHistory">
     <property name="title">
@@ -135,10 +154,23 @@
     <addaction name="redo"/>
     <addaction name="separator"/>
     <addaction name="clearHistory"/>
+    <addaction name="original"/>
+   </widget>
+   <widget class="QMenu" name="menuQuick_transforms">
+    <property name="title">
+     <string>Quick transforms</string>
+    </property>
+    <addaction name="actionQuick1"/>
+    <addaction name="actionQuick2"/>
+    <addaction name="actionQuick3"/>
+    <addaction name="actionQuick4"/>
+    <addaction name="actionQuick5"/>
+    <addaction name="actionQuick6"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuHistory"/>
    <addaction name="menuTransform"/>
+   <addaction name="menuQuick_transforms"/>
   </widget>
   <action name="openFile">
    <property name="text">
@@ -298,6 +330,76 @@
   <action name="actionBKirsch">
    <property name="text">
     <string>Biderectional Kirsch</string>
+   </property>
+  </action>
+  <action name="actionOtsuThreshold">
+   <property name="text">
+    <string>Otsu threshold</string>
+   </property>
+  </action>
+  <action name="actionPseudocoloration">
+   <property name="text">
+    <string>Pseudocoloration</string>
+   </property>
+  </action>
+  <action name="original">
+   <property name="text">
+    <string>Original image</string>
+   </property>
+  </action>
+  <action name="actionErosion">
+   <property name="text">
+    <string>Erosion</string>
+   </property>
+  </action>
+  <action name="actionDilation">
+   <property name="text">
+    <string>Dilation</string>
+   </property>
+  </action>
+  <action name="actionClosing">
+   <property name="text">
+    <string>Closing</string>
+   </property>
+  </action>
+  <action name="actionOpening">
+   <property name="text">
+    <string>Opening</string>
+   </property>
+  </action>
+  <action name="actionWatershed">
+   <property name="text">
+    <string>Watershed</string>
+   </property>
+  </action>
+  <action name="actionQuick5">
+   <property name="text">
+    <string>Cluster detection</string>
+   </property>
+  </action>
+  <action name="actionQuick1">
+   <property name="text">
+    <string>Edge detection</string>
+   </property>
+  </action>
+  <action name="actionQuick2">
+   <property name="text">
+    <string>Kirsch amplification</string>
+   </property>
+  </action>
+  <action name="actionQuick4">
+   <property name="text">
+    <string>Heatmap apmplification</string>
+   </property>
+  </action>
+  <action name="actionQuick3">
+   <property name="text">
+    <string>Edge binarization</string>
+   </property>
+  </action>
+  <action name="actionQuick6">
+   <property name="text">
+    <string>Inverted Binarization</string>
    </property>
   </action>
  </widget>

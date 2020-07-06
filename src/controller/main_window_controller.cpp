@@ -17,6 +17,13 @@
 #include "../transformation/matrix_transformation.hpp"
 #include "../model/image_history.hpp"
 #include "../transformation/bidirectional_matrix_transformation.hpp"
+#include "../transformation/otsu_thresholding.hpp"
+#include "../transformation/pseudocoloration.hpp"
+#include "../transformation/erosion.hpp"
+#include "../transformation/dilation.hpp"
+#include "../transformation/closing.hpp"
+#include "../transformation/opening.hpp"
+#include "../transformation/watershed.hpp"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QtCore/QMimeDatabase>
@@ -24,6 +31,8 @@
 #include <QImageWriter>
 #include <QGraphicsPixmapItem>
 #include <filesystem>
+#include <queue>
+#include <random>
 
 MainWindowController::MainWindowController() : QMainWindow(nullptr),
     ui(std::make_unique<Ui::MainWindow>()),
@@ -41,6 +50,7 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr),
     connect(ui->undo, &QAction::triggered, this, &MainWindowController::undo);
     connect(ui->redo, &QAction::triggered, this, &MainWindowController::redo);
     connect(ui->clearHistory, &QAction::triggered, this, &MainWindowController::clearHistory);
+    connect(ui->original, &QAction::triggered, this, &MainWindowController::returnToOriginal);
 
     if (TokenStorage::instance().getToken().userDetails.isAdmin()) {
         auto administration = new QAction("Administration", ui->menubar);
@@ -76,6 +86,19 @@ void MainWindowController::addTransformationActions() {
     connect(ui->actionBPrewitt, &QAction::triggered, [this]{ applyBidirectionalMatrix(BidirectionalMatrixTransformationType::Prewitt); });
     connect(ui->actionBSobel, &QAction::triggered, [this]{ applyBidirectionalMatrix(BidirectionalMatrixTransformationType::Sobel); });
     connect(ui->actionBKirsch, &QAction::triggered, [this]{ applyBidirectionalMatrix(BidirectionalMatrixTransformationType::Kirsch); });
+    connect(ui->actionOtsuThreshold, &QAction::triggered, this, &MainWindowController::otsuThresholding);
+    connect(ui->actionPseudocoloration, &QAction::triggered, this, &MainWindowController::pseudocoloration);
+    connect(ui->actionErosion, &QAction::triggered, this, &MainWindowController::erosion);
+    connect(ui->actionDilation, &QAction::triggered, this, &MainWindowController::dilation);
+    connect(ui->actionClosing, &QAction::triggered, this, &MainWindowController::closing);
+    connect(ui->actionOpening, &QAction::triggered, this, &MainWindowController::opening);
+    connect(ui->actionWatershed, &QAction::triggered, this, &MainWindowController::watershed);
+    connect(ui->actionQuick1, &QAction::triggered, this, &MainWindowController::quick1);
+    connect(ui->actionQuick2, &QAction::triggered, this, &MainWindowController::quick2);
+    connect(ui->actionQuick3, &QAction::triggered, this, &MainWindowController::quick3);
+    connect(ui->actionQuick4, &QAction::triggered, this, &MainWindowController::quick4);
+    connect(ui->actionQuick5, &QAction::triggered, this, &MainWindowController::quick5);
+    connect(ui->actionQuick6, &QAction::triggered, this, &MainWindowController::quick6);
 
     rgbActions.push_back(ui->actionGrayScale);
     rgbActions.push_back(ui->actionLowPass);
@@ -113,6 +136,13 @@ void MainWindowController::addTransformationActions() {
     bwActions.push_back(ui->actionBPrewitt);
     bwActions.push_back(ui->actionBSobel);
     bwActions.push_back(ui->actionBKirsch);
+    bwActions.push_back(ui->actionOtsuThreshold);
+    bwActions.push_back(ui->actionPseudocoloration);
+    bwActions.push_back(ui->actionErosion);
+    bwActions.push_back(ui->actionDilation);
+    bwActions.push_back(ui->actionClosing);
+    bwActions.push_back(ui->actionOpening);
+    bwActions.push_back(ui->actionWatershed);
 }
 
 void MainWindowController::setImage(ImageCache& cache) {
@@ -141,6 +171,11 @@ void MainWindowController::clearHistory() {
     showImage();
 }
 
+
+void MainWindowController::returnToOriginal() {
+    image = ImageHistory::instance().returnToOriginal(std::move(image));
+    showImage();
+}
 
 void MainWindowController::logoutPressed() {
     TokenStorage::instance().clearToken();
@@ -353,4 +388,155 @@ void MainWindowController::applyBidirectionalMatrix(BidirectionalMatrixTransform
         setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<RGBImage>(currentImage)))));
     else
         setImage(ImageCache(AnyImage(BidirectionalMatrixTransformation(type)(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::otsuThresholding() {
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    setImage(ImageCache(AnyImage(OtsuThresholding()(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::pseudocoloration() {
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    setImage(ImageCache(AnyImage(Pseudocoloration()(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::erosion() {
+    auto dialog = SensibilityDialogController(this);
+    dialog.exec();
+    if (!dialog.spinnerValue)
+        return;
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    setImage(ImageCache(AnyImage(Erosion(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::dilation() {
+    auto dialog = SensibilityDialogController(this);
+    dialog.exec();
+    if (!dialog.spinnerValue)
+        return;
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    setImage(ImageCache(AnyImage(Dilation(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::closing() {
+    auto dialog = SensibilityDialogController(this);
+    dialog.exec();
+    if (!dialog.spinnerValue)
+        return;
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    setImage(ImageCache(AnyImage(Closing(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::opening() {
+    auto dialog = SensibilityDialogController(this);
+    dialog.exec();
+    if (!dialog.spinnerValue)
+        return;
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    setImage(ImageCache(AnyImage(Opening(dialog.spinnerValue.value())(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::watershed() {
+    auto& currentImage = image.getImage();
+    if (std::holds_alternative<RGBImage>(currentImage))
+        return;
+    setImage(ImageCache(AnyImage(Watershed()(std::get<BWImage>(currentImage)))));
+}
+
+void MainWindowController::quick1() {
+    BWImage bwImage;
+    auto& currentImage = image.getImage();
+    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+    if (std::holds_alternative<RGBImage>(currentImage)) {
+        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+    } else {
+        imageReference = std::ref(std::get<BWImage>(currentImage));
+    }
+    auto t1 = LowPass(3)(imageReference.get());
+    auto t2 = HighPass(7)(t1);
+    auto t3 = HistogramEqualization(false)(t2);
+    setImage(ImageCache(AnyImage(std::move(t3))));
+}
+
+void MainWindowController::quick2() {
+    BWImage bwImage;
+    auto& currentImage = image.getImage();
+    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+    if (std::holds_alternative<RGBImage>(currentImage)) {
+        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+    } else {
+        imageReference = std::ref(std::get<BWImage>(currentImage));
+    }
+    auto t1 = BidirectionalMatrixTransformation(BidirectionalMatrixTransformationType::Kirsch)(imageReference.get());
+    auto t2 = LowPass(3)(t1);
+    setImage(ImageCache(AnyImage(std::move(t2))));
+}
+void MainWindowController::quick3() {
+    BWImage bwImage;
+    auto& currentImage = image.getImage();
+    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+    if (std::holds_alternative<RGBImage>(currentImage)) {
+        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+    } else {
+        imageReference = std::ref(std::get<BWImage>(currentImage));
+    }
+    auto t1 = HighPass(9)(imageReference.get());
+    auto t2 = HistogramEqualization(false)(t1);
+    auto t3 = OtsuThresholding()(t2);
+    setImage(ImageCache(AnyImage(std::move(t3))));
+}
+void MainWindowController::quick4() {
+    BWImage bwImage;
+    auto& currentImage = image.getImage();
+    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+    if (std::holds_alternative<RGBImage>(currentImage)) {
+        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+    } else {
+        imageReference = std::ref(std::get<BWImage>(currentImage));
+    }
+    auto t1 = HistogramEqualization(false)(imageReference.get());
+    auto t2 = Pseudocoloration()(t1);
+    setImage(ImageCache(AnyImage(std::move(t2))));
+}
+void MainWindowController::quick5() {
+    BWImage bwImage;
+    auto& currentImage = image.getImage();
+    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+    if (std::holds_alternative<RGBImage>(currentImage)) {
+        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+    } else {
+        imageReference = std::ref(std::get<BWImage>(currentImage));
+    }
+    auto t1 = Opening(5)(imageReference.get());
+    auto t2 = OtsuThresholding()(t1);
+    auto t3 = Watershed()(t2);
+    setImage(ImageCache(AnyImage(std::move(t3))));
+}
+
+void MainWindowController::quick6() {
+    BWImage bwImage;
+    auto& currentImage = image.getImage();
+    std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+    if (std::holds_alternative<RGBImage>(currentImage)) {
+        bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+    } else {
+        imageReference = std::ref(std::get<BWImage>(currentImage));
+    }
+    auto t1 = HistogramEqualization(false)(imageReference.get());
+    auto t2 = Pseudocoloration()(t1);
+    auto t3 = Grayscale()(t2);
+    auto t4 = OtsuThresholding()(t3);
+    setImage(ImageCache(AnyImage(std::move(t4))));
 }

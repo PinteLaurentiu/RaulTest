@@ -35,6 +35,10 @@ private slots:
     void openDatabasePressed();
     void administrationPressed();
     void imageImported(ImageCache& importedImage);
+    void undo();
+    void redo();
+    void clearHistory();
+    void returnToOriginal();
 
 private slots:
     void grayscale();
@@ -44,9 +48,19 @@ private slots:
     void histogramAdaptive();
     void applyMatrix(MatrixTransformationType type);
     void applyBidirectionalMatrix(BidirectionalMatrixTransformationType type);
-    void undo();
-    void redo();
-    void clearHistory();
+    void otsuThresholding();
+    void pseudocoloration();
+    void erosion();
+    void dilation();
+    void closing();
+    void opening();
+    void watershed();
+    void quick1();
+    void quick2();
+    void quick3();
+    void quick4();
+    void quick5();
+    void quick6();
 
 private:
     static void setMimeTypes(QFileDialog &dialog);

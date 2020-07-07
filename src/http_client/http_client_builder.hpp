@@ -15,6 +15,7 @@
 #include <QHttpMultiPart>
 #include "http_request_type.hpp"
 #include "json_document_converter.hpp"
+#include "../controller/wait_dialog_controller.hpp"
 
 class HttpMultiPartBuilder;
 

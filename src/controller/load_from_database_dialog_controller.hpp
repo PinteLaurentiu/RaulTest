@@ -8,6 +8,7 @@
 #include <QDialog>
 #include <memory>
 #include <QtCore/QStringListModel>
+#include "../controller/wait_dialog_controller.hpp"
 #include "../ui/ui_load_database_dialog.h"
 #include "../model/image_cache.hpp"
 
@@ -26,7 +27,10 @@ private:
     void populate();
     void showImage(ImageCache& image);
     void loadImageData(ImageCache& image);
-    void loadImageOwner(ImageCache& image);
+    void loadImageOwner(ImageCache &image, WaitDialogController* wait);
+
+protected:
+    void showEvent(QShowEvent *event) override;
 
 signals:
     void imageImported(ImageCache& image);
@@ -36,6 +40,7 @@ private:
     std::vector<ImageCache> views;
     QGraphicsScene scene;
     QStringListModel model;
+    bool populated = false;
 };
 
 #endif //RAULTESTQT_LOAD_FROM_DATABASE_DIALOG_CONTROLLER_HPP

@@ -29,6 +29,9 @@ void SaveInDatabaseDialogController::savePressed() {
     dto.name = ui->nameInput->text().trimmed().toStdString();
     dto.description = ui->descriptionInput->toPlainText().toStdString();
     dto.id = 0;
+    auto wait = new WaitDialogController(this);
+    wait->setModal(true);
+    wait->show();
     HttpClientBuilder().withType(HttpRequestType::POST)
             .withUrl("/authenticated/image")
             .withAuthentication()
@@ -36,15 +39,19 @@ void SaveInDatabaseDialogController::savePressed() {
             .withPart(dto, "imageDto")
             .withPart(dto.imageData, "imageData")
             .endMultipart()
-            .onSuccess<void>([this](){
+            .onSuccess<void>([this, wait](){
+                wait->close();
+                delete wait;
                 close();
-            }).onError([name, description, this](std::exception_ptr exceptionPtr) {
+            }).onError([name, description, this, wait](std::exception_ptr exceptionPtr) {
                 try {
                     std::rethrow_exception(std::move(exceptionPtr));
                 } catch (BackendException& exception) {
                     dto.name = name;
                     dto.description = description;
                     QMessageBox::information(this, "Image upload failed", exception.what());
+                    wait->close();
+                    delete wait;
                     close();
                 }
             }).execute();

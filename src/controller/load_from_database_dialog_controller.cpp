@@ -24,14 +24,16 @@ LoadFromDatabaseDialogController::LoadFromDatabaseDialogController(QWidget* pare
             this,
             &LoadFromDatabaseDialogController::selectionChanged);
     connect(ui->importButton, &QPushButton::clicked, this, &LoadFromDatabaseDialogController::importPressed);
-    populate();
 }
 
 void LoadFromDatabaseDialogController::populate() {
+    auto wait = new WaitDialogController(this);
+    wait->setModal(true);
+    wait->show();
     HttpClientBuilder().withType(HttpRequestType::GET)
             .withUrl("/authenticated/image/all")
             .withAuthentication()
-            .onSuccess<std::vector<ImageDto>>([this](std::vector<ImageDto> dtos) {
+            .onSuccess<std::vector<ImageDto>>([this, wait](std::vector<ImageDto> dtos) {
                 for (auto viewIter = views.begin(); viewIter != views.end();) {
                     auto iter = std::find_if(dtos.begin(), dtos.end(), [&](ImageDto& dto){
                         return dto.id == viewIter->getImageDto().id;
@@ -62,13 +64,17 @@ void LoadFromDatabaseDialogController::populate() {
                 ui->descriptionText->clear();
                 ui->deleteButton->setEnabled(false);
                 ui->importButton->setEnabled(false);
+                wait->close();
+                delete wait;
             })
-            .onError([](std::exception_ptr exceptionPtr) {
+            .onError([wait](std::exception_ptr exceptionPtr) {
                 try {
                     std::rethrow_exception(std::move(exceptionPtr));
                 } catch (BackendException& exception) {
                     QMessageBox::warning(nullptr, "Error", exception.what());
                 }
+                wait->close();
+                delete wait;
             }).execute();
 }
 
@@ -87,24 +93,29 @@ void LoadFromDatabaseDialogController::selectionChanged(const QItemSelection& cu
 }
 
 void LoadFromDatabaseDialogController::loadImageData(ImageCache& view) {
+    auto wait = new WaitDialogController(this);
+    wait->setModal(true);
+    wait->show();
     HttpClientBuilder().withType(HttpRequestType::GET)
         .withUrl("/authenticated/image/{id}")
         .withUrlParameter("id", std::to_string(view.getImageDto().id))
         .withAuthentication()
-        .onSuccess([&view = view, this](QByteArray array) {
+        .onSuccess([&view = view, this, wait](QByteArray array) {
             auto hash = QCryptographicHash::hash(array, QCryptographicHash::Sha1).toHex().toStdString();
             if (hash != view.getImageDto().checksum) {
                 throw DownloadCorruptionException();
             }
             view.getImageDto().imageData = std::move(array);
-            loadImageOwner(view);
+            loadImageOwner(view, wait);
         })
-        .onError([](std::exception_ptr exceptionPtr){
+        .onError([wait](std::exception_ptr exceptionPtr){
             try {
                 std::rethrow_exception(std::move(exceptionPtr));
             } catch (BackendException& exception) {
                 QMessageBox::warning(nullptr, "Error", exception.what());
             }
+            wait->close();
+            delete wait;
         }).execute();
 }
 
@@ -161,21 +172,31 @@ void LoadFromDatabaseDialogController::showImage(ImageCache& view) {
     ui->importButton->setEnabled(true);
 }
 
-void LoadFromDatabaseDialogController::loadImageOwner(ImageCache& view) {
+void LoadFromDatabaseDialogController::loadImageOwner(ImageCache &image, WaitDialogController* wait) {
     HttpClientBuilder().withType(HttpRequestType::GET)
         .withUrl("/authenticated/user/image/{id}")
-        .withUrlParameter("id", std::to_string(view.getImageDto().id))
+        .withUrlParameter("id", std::to_string(image.getImageDto().id))
         .withAuthentication()
-        .onSuccess<OwnerDto>([&view = view, this](const OwnerDto& owner) {
+        .onSuccess<OwnerDto>([&view = image, this, wait](const OwnerDto& owner) {
             view.getImageDto().owner = owner;
             showImage(view);
+            wait->close();
+            delete wait;
         })
-        .onError([](std::exception_ptr exceptionPtr){
+        .onError([wait](std::exception_ptr exceptionPtr){
             try {
                 std::rethrow_exception(std::move(exceptionPtr));
             } catch (BackendException& exception) {
                 QMessageBox::warning(nullptr, "Error", exception.what());
             }
+            wait->close();
+            delete wait;
         }).execute();
+}
+
+void LoadFromDatabaseDialogController::showEvent(QShowEvent *event) {
+    QDialog::showEvent(event);
+    if (!populated)
+        populate();
 }
 

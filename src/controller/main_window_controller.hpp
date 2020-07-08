@@ -12,6 +12,7 @@
 #include "../model/image_cache.hpp"
 #include "../model/matrix_transformation_type.hpp"
 #include "wait_dialog_controller.hpp"
+#include "zoom_graphics_view.hpp"
 
 #include <vector>
 
@@ -24,6 +25,7 @@ public:
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     ImageCache image;
+    ZoomGraphicsView picture;
     QGraphicsScene scene;
     std::vector<QAction*> bwActions;
     std::vector<QAction*> rgbActions;
@@ -70,7 +72,6 @@ private slots:
 
 private:
     static void setMimeTypes(QFileDialog &dialog);
-    void resizeEvent(QResizeEvent* event) override;
     void showImage();
     void addTransformationActions();
     void disableTransformations();

@@ -36,7 +36,7 @@ private:
     static LabelsQueues createQueues(BWImage& image, BWImage& minimums, std::vector<int>& labels);
     static void watershedLabeling(BWImage& image, BWImage& minimums, std::vector<int>& labels, LabelsQueues& queues);
     static std::vector<int> createColors(BWImage& minimums, std::vector<int>& labels);
-    static RGBImage pseudocolorateOnLabels(const BWImage& image, std::vector<int>& labels, std::vector<int>& colors);
+    static RGBImage pseudocolorateOnLabels(BWImage& image, std::vector<int>& labels, std::vector<int>& colors);
 };
 
 

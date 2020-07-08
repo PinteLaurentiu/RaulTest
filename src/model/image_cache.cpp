@@ -80,14 +80,6 @@ ImageCache::operator bool() {
     return !qImage.isNull() || image || imageDto;
 }
 
-bool ImageCache::hasImageOwner() {
-    return hasImageDto() && imageDto->owner.has_value();
-}
-
-bool ImageCache::hasImageDto() {
-    return imageDto.has_value();
-}
-
 bool ImageCache::hasImage() {
     return static_cast<bool>(image);
 }

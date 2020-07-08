@@ -41,7 +41,6 @@ public:
     std::string checksum = "";
     ImageType imageType = ImageType::RGB;
     QByteArray imageData;
-    std::optional<OwnerDto> owner;
 
 private:
     template<typename Pixel>

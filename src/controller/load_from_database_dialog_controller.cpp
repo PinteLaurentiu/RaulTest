@@ -36,7 +36,7 @@ void LoadFromDatabaseDialogController::populate() {
             .onSuccess<std::vector<ImageDto>>([this, wait](std::vector<ImageDto> dtos) {
                 for (auto viewIter = views.begin(); viewIter != views.end();) {
                     auto iter = std::find_if(dtos.begin(), dtos.end(), [&](ImageDto& dto){
-                        return dto.id == viewIter->getImageDto().id;
+                        return dto.id == viewIter->first.getImageDto().id;
                     });
                     if (iter == dtos.end()) {
                         viewIter = views.erase(viewIter);
@@ -46,18 +46,18 @@ void LoadFromDatabaseDialogController::populate() {
                 }
                 for (auto& view : views) {
                     auto iter = std::find_if(dtos.begin(), dtos.end(), [&](ImageDto& dto){
-                        return dto.id == view.getImageDto().id;
+                        return dto.id == view.first.getImageDto().id;
                     });
                     if (iter != dtos.end()) {
                         dtos.erase(iter);
                     }
                 }
                 for (auto& dto : dtos) {
-                    views.emplace_back(std::move(dto));
+                    views.emplace_back(std::move(dto), OwnerDto());
                 }
                 QStringList list;
                 for (auto& view : views) {
-                    list.push_back(QString::fromStdString(view.getImageDto().name));
+                    list.push_back(QString::fromStdString(view.first.getImageDto().name));
                 }
                 model.setStringList(list);
                 scene.clear();
@@ -85,30 +85,30 @@ void LoadFromDatabaseDialogController::selectionChanged(const QItemSelection& cu
         return;
     }
     auto& view = views.at(current.indexes()[0].row());
-    if (!view.getImageDto().imageData.isNull() && view.hasImageOwner()) {
+    if (!view.first.getImageDto().imageData.isNull() && view.second.id != 0) {
         showImage(view);
         return;
     }
     loadImageData(view);
 }
 
-void LoadFromDatabaseDialogController::loadImageData(ImageCache& view) {
+void LoadFromDatabaseDialogController::loadImageData(std::pair<ImageCache, OwnerDto>& view) {
     auto wait = new WaitDialogController(this);
     wait->setModal(true);
     wait->show();
     HttpClientBuilder().withType(HttpRequestType::GET)
         .withUrl("/authenticated/image/{id}")
-        .withUrlParameter("id", std::to_string(view.getImageDto().id))
+        .withUrlParameter("id", std::to_string(view.first.getImageDto().id))
         .withAuthentication()
         .onSuccess([&view = view, this, wait](QByteArray array) {
             auto hash = QCryptographicHash::hash(array, QCryptographicHash::Sha1).toHex().toStdString();
-            if (hash != view.getImageDto().checksum) {
+            if (hash != view.first.getImageDto().checksum) {
                 throw DownloadCorruptionException();
             }
-            view.getImageDto().imageData = std::move(array);
+            view.first.getImageDto().imageData = std::move(array);
             loadImageOwner(view, wait);
         })
-        .onError([wait](std::exception_ptr exceptionPtr){
+        .onError([this, wait](std::exception_ptr exceptionPtr){
             try {
                 std::rethrow_exception(std::move(exceptionPtr));
             } catch (BackendException& exception) {
@@ -116,6 +116,7 @@ void LoadFromDatabaseDialogController::loadImageData(ImageCache& view) {
             }
             wait->close();
             delete wait;
+            populate();
         }).execute();
 }
 
@@ -124,7 +125,7 @@ void LoadFromDatabaseDialogController::deletePressed() {
     if (selection.isEmpty()) {
         return;
     }
-    auto id = views.at(selection.indexes()[0].row()).getImageDto().id;
+    auto id = views.at(selection.indexes()[0].row()).first.getImageDto().id;
     HttpClientBuilder().withType(HttpRequestType::GET)
         .withUrl("/authenticated/image/{id}/delete")
         .withUrlParameter("id", std::to_string(id))
@@ -148,37 +149,37 @@ void LoadFromDatabaseDialogController::importPressed() {
         return;
     }
     auto& view = views.at(selection.indexes()[0].row());
-    if (view.getImageDto().imageData.isNull() || !view.hasImageOwner()) {
+    if (view.first.getImageDto().imageData.isNull()) {
         return;
     }
-    emit imageImported(view);
+    emit imageImported(view.first);
     close();
 }
 
-void LoadFromDatabaseDialogController::showImage(ImageCache& view) {
+void LoadFromDatabaseDialogController::showImage(std::pair<ImageCache, OwnerDto>& view) {
     std::ostringstream output;
-    output << "Uploaded by: " << view.getImageDto().owner->name << std::endl
+    output << "Uploaded by: " << view.second.name << std::endl
            << "Description:" << std::endl
-           << view.getImageDto().description;
+           << view.first.getImageDto().description;
     ui->descriptionText->setText(QString::fromStdString(output.str()));
-    auto pixmap = QPixmap::fromImage(view.getQImage()).scaled(ui->imageView->size(), Qt::KeepAspectRatio);
+    auto pixmap = QPixmap::fromImage(view.first.getQImage()).scaled(ui->imageView->size(), Qt::KeepAspectRatio);
     scene.clear();
     auto offsetX = (ui->imageView->width() - pixmap.width()) / 2;
     auto offsetY = (ui->imageView->height() - pixmap.height()) / 2;
     scene.addPixmap(pixmap)->setOffset(offsetX, offsetY);
-    if (view.getImageDto().owner->id == TokenStorage::instance().getToken().userDetails.id) {
+    if (view.second.id == TokenStorage::instance().getToken().userDetails.id) {
         ui->deleteButton->setEnabled(true);
     }
     ui->importButton->setEnabled(true);
 }
 
-void LoadFromDatabaseDialogController::loadImageOwner(ImageCache &image, WaitDialogController* wait) {
+void LoadFromDatabaseDialogController::loadImageOwner(std::pair<ImageCache, OwnerDto>& image, WaitDialogController* wait) {
     HttpClientBuilder().withType(HttpRequestType::GET)
         .withUrl("/authenticated/user/image/{id}")
-        .withUrlParameter("id", std::to_string(image.getImageDto().id))
+        .withUrlParameter("id", std::to_string(image.first.getImageDto().id))
         .withAuthentication()
         .onSuccess<OwnerDto>([&view = image, this, wait](const OwnerDto& owner) {
-            view.getImageDto().owner = owner;
+            view.second = owner;
             showImage(view);
             wait->close();
             delete wait;

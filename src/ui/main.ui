@@ -14,41 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <widget class="QGraphicsView" name="picture">
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="nameLabel">
-      <property name="text">
-       <string>Name:</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QTextBrowser" name="descriptionText">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>100</height>
-       </size>
-      </property>
-     </widget>
-    </item>
-   </layout>
+   <layout class="QVBoxLayout" name="verticalLayout"/>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -167,8 +133,17 @@
     <addaction name="actionQuick5"/>
     <addaction name="actionQuick6"/>
    </widget>
+   <widget class="QMenu" name="menuZoom">
+    <property name="title">
+     <string>Zoom</string>
+    </property>
+    <addaction name="increaseZoom"/>
+    <addaction name="decreaseZoom"/>
+    <addaction name="resetZoom"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuHistory"/>
+   <addaction name="menuZoom"/>
    <addaction name="menuTransform"/>
    <addaction name="menuQuick_transforms"/>
   </widget>
@@ -400,6 +375,27 @@
   <action name="actionQuick6">
    <property name="text">
     <string>Inverted Binarization</string>
+   </property>
+  </action>
+  <action name="increaseZoom">
+   <property name="text">
+    <string>Increase</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl++</string>
+   </property>
+  </action>
+  <action name="decreaseZoom">
+   <property name="text">
+    <string>Decrease</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
+   </property>
+  </action>
+  <action name="resetZoom">
+   <property name="text">
+    <string>Reset</string>
    </property>
   </action>
  </widget>

@@ -96,10 +96,9 @@ HistogramEqualization::HistogramEqualization(bool adaptive) : adaptive(adaptive)
 
 byte HistogramEqualization::getOtsuThreshold(BWImage& image) {
     auto histogram = buildHistogram(image);
-    unsigned long long sum = 0;
+    unsigned long long sum = image.getData().size();
     unsigned long long dotProduct = 0;
     for (auto i = 0; i < histogram.size(); ++i) {
-        sum += histogram[i];
         dotProduct += histogram[i] * i;
     }
     auto wB = 0ull;

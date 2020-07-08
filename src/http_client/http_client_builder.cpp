@@ -119,7 +119,20 @@ void HttpClientBuilder::execute() {
                                                        errorCallback = std::move(errorCallback)](){
         try {
             if (reply->error() != QNetworkReply::NoError) {
-                throw HttpClientConnectionException(reply->errorString().toStdString());
+                QJsonParseError error{0, QJsonParseError::NoError};
+                auto json = QJsonDocument::fromJson(reply->readAll(), &error);
+                if (error.error != QJsonParseError::NoError || !json.isObject()) {
+                    throw HttpClientConnectionException(reply->errorString().toStdString());
+                }
+                auto object = json.object();
+                if (!object.contains("message")) {
+                    throw HttpClientConnectionException(reply->errorString().toStdString());
+                }
+                auto value = object.value("message").toString("");
+                if (value.isEmpty()) {
+                    throw HttpClientConnectionException(reply->errorString().toStdString());
+                }
+                throw HttpClientConnectionException(value.toStdString());
             }
 
             successCallback(reply->readAll());

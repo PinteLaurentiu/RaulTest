@@ -115,34 +115,46 @@ std::vector<int> Watershed::createColors(BWImage& minimums, std::vector<int>& la
     return colors;
 }
 
-RGBImage Watershed::pseudocolorateOnLabels(const BWImage &image, std::vector<int> &labels, std::vector<int>& colors) {
+RGBImage Watershed::pseudocolorateOnLabels(BWImage &image, std::vector<int> &labels, std::vector<int>& colors) {
     auto width = image.getWidth();
     auto height = image.getHeight();
     RGBImage destination(width, height);
     if (colors.size() < 2) {
         return destination;
     }
-    for (int i = 0; i < width; ++i) {
-        for (int j = 0; j < height; ++j) {
-            auto value = colors[labels[index(i, j, width)]] * 1276 / (colors.size() - 1);
-            auto& pixel = destination.get(i, j);
-            if (value < 256) {
-                pixel = RGBPixel(255 - value, 0, 255);
-            } else if (value < 511) {
-                pixel = RGBPixel(0, value - 255, 255);
-            } else if (value < 766) {
-                pixel = RGBPixel(0, 255, 765 - value);
-            } else if (value < 1021) {
-                pixel = RGBPixel(value - 765, 255, 0);
-            } else if (value < 1276) {
-                pixel = RGBPixel(255, 1275 - value, 0);
-            }
-            auto originalPixel = image.get(i,j);
-            pixel = RGBPixel((originalPixel.brightness() * 4 + pixel.red()) / 5,
-                             (originalPixel.brightness() * 4 + pixel.green()) / 5,
-                             (originalPixel.brightness() * 4 + pixel.blue()) / 5);
-        }
-    }
+    OpenCLKernel kernel("watershedPseudocoloration");
+    OpenCLBuffer bufferInput(image.getData(), OpenCLBufferMode::READ, OpenCLBufferMemoryType::DUPLICATE);
+    OpenCLBuffer bufferLabels(labels, OpenCLBufferMode::READ, OpenCLBufferMemoryType::DUPLICATE);
+    OpenCLBuffer bufferColors(colors, OpenCLBufferMode::READ, OpenCLBufferMemoryType::DUPLICATE);
+    OpenCLBuffer bufferOutput(destination.getData(), OpenCLBufferMode::WRITE);
+    kernel.addArgument(bufferInput);
+    kernel.addArgument(bufferLabels);
+    kernel.addArgument(bufferColors);
+    kernel.addNumericArgument(static_cast<int>(colors.size()));
+    kernel.addArgument(bufferOutput);
+    kernel(image.getWidth() * image.getHeight());
+    bufferOutput.read(destination.getData());
+//    for (int i = 0; i < width; ++i) {
+//        for (int j = 0; j < height; ++j) {
+//            auto value = colors[labels[index(i, j, width)]] * 1276 / (colors.size() - 1);
+//            auto& pixel = destination.get(i, j);
+//            if (value < 256) {
+//                pixel = RGBPixel(255 - value, 0, 255);
+//            } else if (value < 511) {
+//                pixel = RGBPixel(0, value - 255, 255);
+//            } else if (value < 766) {
+//                pixel = RGBPixel(0, 255, 765 - value);
+//            } else if (value < 1021) {
+//                pixel = RGBPixel(value - 765, 255, 0);
+//            } else if (value < 1276) {
+//                pixel = RGBPixel(255, 1275 - value, 0);
+//            }
+//            auto originalPixel = image.get(i,j);
+//            pixel = RGBPixel((originalPixel.brightness() * 4 + pixel.red()) / 5,
+//                             (originalPixel.brightness() * 4 + pixel.green()) / 5,
+//                             (originalPixel.brightness() * 4 + pixel.blue()) / 5);
+//        }
+//    }
     return destination;
 }
 

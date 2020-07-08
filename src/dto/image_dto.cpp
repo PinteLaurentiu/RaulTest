@@ -51,8 +51,7 @@ ImageDto::ImageDto(ImageDto&& other) noexcept :
     name(std::move(other.name)),
     description(std::move(other.description)),
     checksum(std::move(other.checksum)),
-    imageData(std::move(other.imageData)),
-    owner(std::move(other.owner))
+    imageData(std::move(other.imageData))
     {}
 
 ImageDto& ImageDto::operator=(ImageDto&& other) noexcept {
@@ -64,6 +63,5 @@ ImageDto& ImageDto::operator=(ImageDto&& other) noexcept {
     description = std::move(other.description);
     checksum = std::move(other.checksum);
     imageData = std::move(other.imageData);
-    owner = std::move(other.owner);
     return *this;
 }

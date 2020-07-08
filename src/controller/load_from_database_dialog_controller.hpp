@@ -25,9 +25,9 @@ private slots:
 
 private:
     void populate();
-    void showImage(ImageCache& image);
-    void loadImageData(ImageCache& image);
-    void loadImageOwner(ImageCache &image, WaitDialogController* wait);
+    void showImage(std::pair<ImageCache, OwnerDto>& image);
+    void loadImageData(std::pair<ImageCache, OwnerDto>& image);
+    void loadImageOwner(std::pair<ImageCache, OwnerDto>& image, WaitDialogController* wait);
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -37,7 +37,7 @@ signals:
 
 private:
     std::unique_ptr<Ui::loadDatabaseDialog> ui;
-    std::vector<ImageCache> views;
+    std::vector<std::pair<ImageCache, OwnerDto>> views;
     QGraphicsScene scene;
     QStringListModel model;
     bool populated = false;

@@ -2,7 +2,6 @@
 // Created by laurentiu on 22.05.2020.
 //
 
-#include <iostream>
 #include "main_window_controller.hpp"
 #include "load_from_database_dialog_controller.hpp"
 #include "login_controller.hpp"
@@ -34,10 +33,12 @@
 
 MainWindowController::MainWindowController() : QMainWindow(nullptr),
     ui(std::make_unique<Ui::MainWindow>()),
-    image(QImage()) {
+    image(QImage()),
+    picture(this) {
 
     ui->setupUi(this);
-    ui->picture->setScene(&scene);
+    picture.setScene(&scene);
+    ui->verticalLayout->addWidget(&picture);
 
     connect(ui->exit, &QAction::triggered, &QApplication::closeAllWindows);
     connect(ui->logout, &QAction::triggered, this, &MainWindowController::logoutPressed);
@@ -50,6 +51,10 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr),
     connect(ui->clearHistory, &QAction::triggered, this, &MainWindowController::clearHistory);
     connect(ui->original, &QAction::triggered, this, &MainWindowController::returnToOriginal);
     connect(this, &MainWindowController::newImage, this, &MainWindowController::showImage, Qt::QueuedConnection);
+    connect(this, &MainWindowController::saveFailed, this, &MainWindowController::showSaveFailedMessage, Qt::QueuedConnection);
+    connect(ui->increaseZoom, &QAction::triggered, &picture, &ZoomGraphicsView::increaseZoom);
+    connect(ui->decreaseZoom, &QAction::triggered, &picture, &ZoomGraphicsView::decreaseZoom);
+    connect(ui->resetZoom, &QAction::triggered, &picture, &ZoomGraphicsView::originalSize);
 
     if (TokenStorage::instance().getToken().userDetails.isAdmin()) {
         auto administration = new QAction("Administration", ui->menubar);
@@ -58,11 +63,6 @@ MainWindowController::MainWindowController() : QMainWindow(nullptr),
     }
 
     addTransformationActions();
-}
-
-void MainWindowController::resizeEvent(QResizeEvent *event) {
-    QWidget::resizeEvent(event);
-    showImage();
 }
 
 void MainWindowController::addTransformationActions() {
@@ -192,6 +192,7 @@ void MainWindowController::openFilePressed() {
         QImageReader reader;
         reader.setFileName(filename);
         ImageHistory::instance().clear();
+        picture.originalSize();
         image = ImageCache(QImage());
         setImage(ImageCache(reader.read()));
     }).exec();
@@ -260,6 +261,7 @@ void MainWindowController::openDatabasePressed() {
 void MainWindowController::imageImported(ImageCache& importedImage) {
     ImageHistory::instance().clear();
     image = ImageCache(QImage());
+    picture.originalSize();
     setImage(std::move(importedImage));
 }
 
@@ -278,30 +280,13 @@ void MainWindowController::administrationPressed() {
 
 void MainWindowController::showImage() {
     scene.clear();
-    ui->descriptionText->clear();
-    ui->nameLabel->clear();
     ui->saveFile->setEnabled(false);
     ui->saveDatabase->setEnabled(false);
     ui->undo->setEnabled(false);
     ui->redo->setEnabled(false);
     ui->clearHistory->setEnabled(false);
     disableTransformations();
-    if (!image)
-        return;
-    auto pixmap = QPixmap::fromImage(image.getQImage()).scaled(ui->picture->size(), Qt::KeepAspectRatio);
-    auto offsetX = (ui->picture->width() - pixmap.width()) / 2;
-    auto offsetY = (ui->picture->height() - pixmap.height()) / 2;
-    scene.addPixmap(pixmap)->setOffset(offsetX, offsetY);
-    if (image.hasImageOwner()) {
-        std::ostringstream output;
-        output << "Uploaded by: " << image.getImageDto().owner->name << std::endl
-               << "Description:" << std::endl
-               << image.getImageDto().description;
-        ui->descriptionText->setText(QString::fromStdString(output.str()));
-        std::ostringstream nameLabelBuilder;
-        nameLabelBuilder << "Name: " << image.getImageDto().name;
-        ui->nameLabel->setText(QString::fromStdString(nameLabelBuilder.str()));
-    }
+    picture.setImage(image);
     enableTransformations();
     ui->saveFile->setEnabled(true);
     ui->saveDatabase->setEnabled(true);
@@ -345,7 +330,8 @@ void MainWindowController::lowpass() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+    auto value = dialog.spinnerValue.value();
+    WaitDialogController(this, [this, value] {
         auto &currentImage = image.getImage();
         if (std::holds_alternative<RGBImage>(currentImage))
             setImage(ImageCache(AnyImage(LowPass(value)(std::get<RGBImage>(currentImage)))));
@@ -359,7 +345,8 @@ void MainWindowController::highpass() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+    auto value = dialog.spinnerValue.value();
+    WaitDialogController(this, [this, value] {
 
     auto& currentImage = image.getImage();
     if (std::holds_alternative<RGBImage>(currentImage))
@@ -430,7 +417,8 @@ void MainWindowController::erosion() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+    auto value = dialog.spinnerValue.value();
+    WaitDialogController(this, [this, value] {
         auto& currentImage = image.getImage();
         if (std::holds_alternative<RGBImage>(currentImage))
             return;
@@ -443,7 +431,8 @@ void MainWindowController::dilation() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+    auto value = dialog.spinnerValue.value();
+    WaitDialogController(this, [this, value] {
         auto& currentImage = image.getImage();
         if (std::holds_alternative<RGBImage>(currentImage))
             return;
@@ -456,7 +445,8 @@ void MainWindowController::closing() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+    auto value = dialog.spinnerValue.value();
+    WaitDialogController(this, [this, value] {
         auto& currentImage = image.getImage();
         if (std::holds_alternative<RGBImage>(currentImage))
             return;
@@ -469,7 +459,8 @@ void MainWindowController::opening() {
     dialog.exec();
     if (!dialog.spinnerValue)
         return;
-    WaitDialogController(this, [this, value = dialog.spinnerValue.value()] {
+    auto value = dialog.spinnerValue.value();
+    WaitDialogController(this, [this, value] {
         auto& currentImage = image.getImage();
         if (std::holds_alternative<RGBImage>(currentImage))
             return;
@@ -589,11 +580,6 @@ void MainWindowController::quick6() {
 
 /* TODO:
  *
- * Wait message
- * Error handling
- * Remove the description name thing
- * Zoom
- * Watershed on GPU
  * Database: Email registration
  * Color inversion
  * Gaussian filter

@@ -18,8 +18,6 @@ public:
     AnyImage& getImage();
     ImageDto& getImageDto();
     explicit operator bool();
-    bool hasImageOwner();
-
     bool hasImage();
 
 private:

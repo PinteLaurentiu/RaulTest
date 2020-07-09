@@ -1,3 +1,4 @@
+
 __kernel void minimum(int size, __global unsigned char* in, __global unsigned char* out)
 {
     int width = get_global_size(0);

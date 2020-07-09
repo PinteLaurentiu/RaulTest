@@ -1,3 +1,4 @@
+
 __kernel void pseudocoloration(__global unsigned char* in, __global unsigned char* out) {
     unsigned long g_id = get_global_id(0);
     int in_value = in[g_id] * 1276 / 255;

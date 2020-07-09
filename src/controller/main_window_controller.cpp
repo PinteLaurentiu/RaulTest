@@ -24,6 +24,8 @@
 #include "../transformation/opening.hpp"
 #include "../transformation/watershed.hpp"
 #include "../transformation/color_inversion.hpp"
+#include "../transformation/gaussian_blur.hpp"
+#include "../transformation/canny.hpp"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QtCore/QMimeDatabase>
@@ -94,12 +96,15 @@ void MainWindowController::addTransformationActions() {
     connect(ui->actionOpening, &QAction::triggered, this, &MainWindowController::opening);
     connect(ui->actionWatershed, &QAction::triggered, this, &MainWindowController::watershed);
     connect(ui->actionColorInversion, &QAction::triggered, this, &MainWindowController::inversColors);
+    connect(ui->actionGaussian, &QAction::triggered, this, &MainWindowController::gaussianBlur);
+    connect(ui->actionCanny, &QAction::triggered, this, &MainWindowController::canny);
     connect(ui->actionQuick1, &QAction::triggered, this, &MainWindowController::quick1);
     connect(ui->actionQuick2, &QAction::triggered, this, &MainWindowController::quick2);
     connect(ui->actionQuick3, &QAction::triggered, this, &MainWindowController::quick3);
     connect(ui->actionQuick4, &QAction::triggered, this, &MainWindowController::quick4);
     connect(ui->actionQuick5, &QAction::triggered, this, &MainWindowController::quick5);
     connect(ui->actionQuick6, &QAction::triggered, this, &MainWindowController::quick6);
+    connect(ui->actionQuick7, &QAction::triggered, this, &MainWindowController::quick7);
 
     rgbActions.push_back(ui->actionGrayScale);
     rgbActions.push_back(ui->actionLowPass);
@@ -118,6 +123,15 @@ void MainWindowController::addTransformationActions() {
     rgbActions.push_back(ui->actionBPrewitt);
     rgbActions.push_back(ui->actionBSobel);
     rgbActions.push_back(ui->actionBKirsch);
+    rgbActions.push_back(ui->actionColorInversion);
+    rgbActions.push_back(ui->actionGaussian);
+    rgbActions.push_back(ui->actionQuick1);
+    rgbActions.push_back(ui->actionQuick2);
+    rgbActions.push_back(ui->actionQuick3);
+    rgbActions.push_back(ui->actionQuick4);
+    rgbActions.push_back(ui->actionQuick5);
+    rgbActions.push_back(ui->actionQuick6);
+    rgbActions.push_back(ui->actionQuick7);
 
     bwActions.push_back(ui->actionLowPass);
     bwActions.push_back(ui->actionHighPass);
@@ -144,6 +158,18 @@ void MainWindowController::addTransformationActions() {
     bwActions.push_back(ui->actionClosing);
     bwActions.push_back(ui->actionOpening);
     bwActions.push_back(ui->actionWatershed);
+    bwActions.push_back(ui->actionColorInversion);
+    bwActions.push_back(ui->actionGaussian);
+    bwActions.push_back(ui->actionCanny);
+    bwActions.push_back(ui->actionQuick1);
+    bwActions.push_back(ui->actionQuick2);
+    bwActions.push_back(ui->actionQuick3);
+    bwActions.push_back(ui->actionQuick4);
+    bwActions.push_back(ui->actionQuick5);
+    bwActions.push_back(ui->actionQuick6);
+    bwActions.push_back(ui->actionQuick7);
+
+    disableTransformations();
 }
 
 void MainWindowController::setImage(ImageCache&& cache) {
@@ -287,6 +313,10 @@ void MainWindowController::showImage() {
     ui->undo->setEnabled(false);
     ui->redo->setEnabled(false);
     ui->clearHistory->setEnabled(false);
+    ui->increaseZoom->setEnabled(false);
+    ui->decreaseZoom->setEnabled(false);
+    ui->resetZoom->setEnabled(false);
+    ui->original->setEnabled(false);
     disableTransformations();
     picture.setImage(image);
     enableTransformations();
@@ -295,6 +325,10 @@ void MainWindowController::showImage() {
     ui->undo->setEnabled(ImageHistory::instance().hasBack());
     ui->redo->setEnabled(ImageHistory::instance().hasFront());
     ui->clearHistory->setEnabled(ImageHistory::instance().hasFront() || ImageHistory::instance().hasBack());
+    ui->increaseZoom->setEnabled(true);
+    ui->decreaseZoom->setEnabled(true);
+    ui->resetZoom->setEnabled(true);
+    ui->original->setEnabled(true);
 }
 
 void MainWindowController::disableTransformations() {
@@ -303,6 +337,25 @@ void MainWindowController::disableTransformations() {
     }
     for (auto& action : bwActions) {
         action->setEnabled(false);
+    }
+    updateEnabledStateMenus();
+}
+
+void MainWindowController::updateEnabledStateMenus() const {
+    for (int i = 1; i <= 7; ++i) {
+        std::ostringstream buffer;
+        buffer << "menu" << i;
+        auto menu = findChild<QMenu*>(QString::fromStdString(buffer.str()), Qt::FindChildrenRecursively);
+        if (!menu)
+            continue;
+
+        menu->setEnabled(false);
+        for (auto action : menu->actions()) {
+            if (action->isEnabled()) {
+                menu->setEnabled(true);
+                break;
+            }
+        }
     }
 }
 
@@ -316,6 +369,7 @@ void MainWindowController::enableTransformations() {
             action->setEnabled(true);
         }
     }
+    updateEnabledStateMenus();
 }
 
 void MainWindowController::grayscale() {
@@ -489,6 +543,25 @@ void MainWindowController::watershed() {
     }).exec();
 }
 
+void MainWindowController::gaussianBlur() {
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            setImage(ImageCache(AnyImage(GaussianBlur()(std::get<RGBImage>(currentImage)))));
+        else
+            setImage(ImageCache(AnyImage(GaussianBlur()(std::get<BWImage>(currentImage)))));
+    }).exec();
+}
+
+void MainWindowController::canny() {
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            return;
+        setImage(ImageCache(AnyImage(Canny()(std::get<BWImage>(currentImage)))));
+    }).exec();
+}
+
 void MainWindowController::quick1() {
     WaitDialogController(this, [this] {
         BWImage bwImage;
@@ -590,13 +663,18 @@ void MainWindowController::quick6() {
     }).exec();
 }
 
-/* TODO:
- *
- * Database: Email registration
- * Gaussian filter
- * Canny edge detection
- *
- * 
- *
- * Maybe clean the code
- */
+void MainWindowController::quick7() {
+    WaitDialogController(this, [this] {
+        BWImage bwImage;
+        auto& currentImage = image.getImage();
+        std::reference_wrapper<BWImage> imageReference = std::ref(bwImage);
+        if (std::holds_alternative<RGBImage>(currentImage)) {
+            bwImage = Grayscale()(std::get<RGBImage>(currentImage));
+        } else {
+            imageReference = std::ref(std::get<BWImage>(currentImage));
+        }
+        auto t1 = HistogramEqualization(false)(imageReference.get());
+        auto t2 = Canny()(t1);
+        setImage(ImageCache(AnyImage(std::move(t2))));
+    }).exec();
+}

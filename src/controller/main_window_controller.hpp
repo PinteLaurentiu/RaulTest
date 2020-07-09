@@ -64,12 +64,15 @@ private slots:
     void closing();
     void opening();
     void watershed();
+    void gaussianBlur();
+    void canny();
     void quick1();
     void quick2();
     void quick3();
     void quick4();
     void quick5();
     void quick6();
+    void quick7();
 
 private:
     static void setMimeTypes(QFileDialog &dialog);
@@ -78,6 +81,8 @@ private:
     void disableTransformations();
     void enableTransformations();
     void setImage(ImageCache&& cache);
+
+    void updateEnabledStateMenus() const;
 };
 
 #endif //RAULTESTQT_MAIN_WINDOW_CONTROLLER_HPP

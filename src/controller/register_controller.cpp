@@ -107,8 +107,7 @@ void RegisterController::sendRegisterRequest(RegisterDto& dto) {
                        .onSuccess<void>([this](){
                            std::ostringstream message;
                            message << "Successfully registered! This account is by default disabled! "
-                                   << "To enable your account send an email to documents.raulapp@gmail.com "
-                                   << "with your documents that proves your rank as a doctor!";
+                                   << "To enable your account follow the instructions sent to the provided email!";
                            QMessageBox::information(this, "Registered", QString::fromStdString(message.str()));
                            backClicked(ui->emailField->text().toStdString());
                        })

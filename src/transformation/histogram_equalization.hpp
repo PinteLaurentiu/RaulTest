@@ -13,6 +13,7 @@ public:
     explicit HistogramEqualization(bool adaptive);
     BWImage operator()(BWImage& image);
     static byte getOtsuThreshold(BWImage& image);
+    static std::pair<byte, byte> getCannyThresholds(BWImage& image);
 private:
     bool adaptive;
     static std::vector<size_t> buildHistogram(BWImage& image);

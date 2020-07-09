@@ -6,8 +6,7 @@
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
-
+    OpenCLKernel kernel("rgbToBw");
     (new LoginController)->show();
-
     return QApplication::exec();
 }

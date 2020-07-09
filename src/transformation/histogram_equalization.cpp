@@ -121,3 +121,15 @@ byte HistogramEqualization::getOtsuThreshold(BWImage& image) {
     }
     return level;
 }
+
+std::pair<byte, byte> HistogramEqualization::getCannyThresholds(BWImage &image) {
+    auto histogram = buildHistogram(image);
+    auto first = std::find_if(histogram.begin() + 1,
+                              histogram.end(),
+                              [](size_t value) { return value != 0; }) - histogram.begin();
+    auto last = histogram.size() - 1 - (std::find_if(histogram.rbegin(),
+                                                     histogram.rend() - 1,
+                                                     [](size_t value) { return value != 0; }) - histogram.rbegin());
+    auto distance = (last - first) / 3;
+    return {first + distance, last - distance};
+}

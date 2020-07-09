@@ -1,5 +1,5 @@
-__kernel void bwErosion(int size, __global unsigned char* in, __global unsigned char* out)
-{
+
+__kernel void bwErosion(int size, __global unsigned char* in, __global unsigned char* out) {
     int width = get_global_size(0);
     int height = get_global_size(1);
     int x = get_global_id(0);
@@ -30,3 +30,4 @@ __kernel void bwErosion(int size, __global unsigned char* in, __global unsigned 
     }
     out[index] = min;
 }
+

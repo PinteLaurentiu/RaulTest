@@ -1,3 +1,4 @@
+
 int clamp(int value, int max) {
     if (value < 0)
         return 0;

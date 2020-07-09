@@ -1,3 +1,4 @@
+
 __kernel void histogram(unsigned long size ,__global unsigned char* in, __global unsigned long* out) {
     unsigned long g_size = get_global_size(0);
     unsigned long g_id = get_global_id(0);

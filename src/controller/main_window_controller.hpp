@@ -56,6 +56,7 @@ private slots:
     void histogramAdaptive();
     void applyMatrix(MatrixTransformationType type);
     void applyBidirectionalMatrix(BidirectionalMatrixTransformationType type);
+    void inversColors();
     void otsuThresholding();
     void pseudocoloration();
     void erosion();

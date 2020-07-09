@@ -23,6 +23,7 @@
 #include "../transformation/closing.hpp"
 #include "../transformation/opening.hpp"
 #include "../transformation/watershed.hpp"
+#include "../transformation/color_inversion.hpp"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QtCore/QMimeDatabase>
@@ -92,6 +93,7 @@ void MainWindowController::addTransformationActions() {
     connect(ui->actionClosing, &QAction::triggered, this, &MainWindowController::closing);
     connect(ui->actionOpening, &QAction::triggered, this, &MainWindowController::opening);
     connect(ui->actionWatershed, &QAction::triggered, this, &MainWindowController::watershed);
+    connect(ui->actionColorInversion, &QAction::triggered, this, &MainWindowController::inversColors);
     connect(ui->actionQuick1, &QAction::triggered, this, &MainWindowController::quick1);
     connect(ui->actionQuick2, &QAction::triggered, this, &MainWindowController::quick2);
     connect(ui->actionQuick3, &QAction::triggered, this, &MainWindowController::quick3);
@@ -394,6 +396,16 @@ void MainWindowController::applyBidirectionalMatrix(BidirectionalMatrixTransform
     }).exec();
 }
 
+void MainWindowController::inversColors() {
+    WaitDialogController(this, [this] {
+        auto& currentImage = image.getImage();
+        if (std::holds_alternative<RGBImage>(currentImage))
+            setImage(ImageCache(AnyImage(ColorInversion()(std::get<RGBImage>(currentImage)))));
+        else
+            setImage(ImageCache(AnyImage(ColorInversion()(std::get<BWImage>(currentImage)))));
+    }).exec();
+}
+
 void MainWindowController::otsuThresholding() {
     WaitDialogController(this, [this] {
         auto& currentImage = image.getImage();
@@ -581,7 +593,6 @@ void MainWindowController::quick6() {
 /* TODO:
  *
  * Database: Email registration
- * Color inversion
  * Gaussian filter
  * Canny edge detection
  *

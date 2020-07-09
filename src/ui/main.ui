@@ -111,6 +111,7 @@
     <addaction name="menuSegmentations"/>
     <addaction name="menuMorphology"/>
     <addaction name="actionPseudocoloration"/>
+    <addaction name="actionColorInversion"/>
    </widget>
    <widget class="QMenu" name="menuHistory">
     <property name="title">
@@ -396,6 +397,11 @@
   <action name="resetZoom">
    <property name="text">
     <string>Reset</string>
+   </property>
+  </action>
+  <action name="actionColorInversion">
+   <property name="text">
+    <string>Color Inversion</string>
    </property>
   </action>
  </widget>
